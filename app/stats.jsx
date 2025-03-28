@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Activity, Brain, Clock, Sun } from 'lucide-react-native';
+import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32;
@@ -10,6 +10,12 @@ const generateData = (days) => {
   return Array.from({ length: days }, (_, i) => ({
     date: `Day ${i + 1}`,
     sleepQuality: Math.random() * 100,
+    lightLevel: Math.random() * 100,
+    ambientNoise: Math.random() * 80,
+    bedTime: Math.floor(Math.random() * 24),
+    wakeTime: Math.floor(Math.random() * 24),
+    timeInBed: Math.random() * 10,
+    timeToSleep: Math.floor(Math.random() * 120),
   }));
 };
 
@@ -17,12 +23,11 @@ export default function Stats() {
   const [timeRange, setTimeRange] = useState('Daily');
   const [data] = useState(() => generateData(7));
 
-  const chartConfig = {
+  const baseChartConfig = {
     backgroundColor: '#0F172A',
     backgroundGradientFrom: '#0F172A',
     backgroundGradientTo: '#0F172A',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(226, 232, 240, ${opacity})`,
     style: {
       borderRadius: 16,
     },
@@ -33,7 +38,6 @@ export default function Stats() {
     propsForDots: {
       r: '4',
       strokeWidth: '2',
-      stroke: '#E2E8F0',
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
@@ -43,10 +47,115 @@ export default function Stats() {
     paddingRight: 15,
   };
 
+  const sleepQualityConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#3B82F6',
+    },
+  };
+
+  const lightLevelConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#F59E0B',
+    },
+  };
+
+  const ambientNoiseConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#8B5CF6',
+    },
+  };
+
+  const bedTimeConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#6366F1',
+    },
+  };
+
+  const wakeTimeConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#0EA5E9',
+    },
+  };
+
+  const timeInBedConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#10B981',
+    },
+  };
+
+  const timeToSleepConfig = {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#EC4899',
+    },
+  };
+
   const sleepQualityData = {
     labels: data.map(d => d.date),
     datasets: [{
-      data: data.map(d => d.sleepQuality),
+      data: data.map(d => Number(d.sleepQuality.toFixed(1))),
+    }],
+  };
+
+  const lightLevelData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.lightLevel.toFixed(1))),
+    }],
+  };
+
+  const ambientNoiseData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.ambientNoise.toFixed(1))),
+    }],
+  };
+
+  const bedTimeData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.bedTime)),
+    }],
+  };
+
+  const wakeTimeData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.wakeTime)),
+    }],
+  };
+
+  const timeInBedData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.timeInBed.toFixed(1))),
+    }],
+  };
+
+  const timeToSleepData = {
+    labels: data.map(d => d.date),
+    datasets: [{
+      data: data.map(d => Number(d.timeToSleep)),
     }],
   };
 
@@ -101,13 +210,118 @@ export default function Stats() {
       </View>
 
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Sleep Quality Trend</Text>
+        <View style={styles.chartTitleContainer}>
+          <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Sleep Quality Trend</Text>
+        </View>
         <View style={styles.chartContainer}>
           <LineChart
             data={sleepQualityData}
             width={chartWidth}
             height={220}
-            chartConfig={chartConfig}
+            chartConfig={sleepQualityConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Light Level</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={lightLevelData}
+            width={chartWidth}
+            height={220}
+            chartConfig={lightLevelConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Ambient Noise</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={ambientNoiseData}
+            width={chartWidth}
+            height={220}
+            chartConfig={ambientNoiseConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Moon size={24} color="#6366F1" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Bed Time</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={bedTimeData}
+            width={chartWidth}
+            height={220}
+            chartConfig={bedTimeConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Sunrise size={24} color="#0EA5E9" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Wake Time</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={wakeTimeData}
+            width={chartWidth}
+            height={220}
+            chartConfig={wakeTimeConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Clock size={24} color="#10B981" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Time in Bed</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={timeInBedData}
+            width={chartWidth}
+            height={220}
+            chartConfig={timeInBedConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Timer size={24} color="#EC4899" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Time to Fall Asleep</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={timeToSleepData}
+            width={chartWidth}
+            height={220}
+            chartConfig={timeToSleepConfig}
             bezier
             style={styles.chart}
           />
@@ -203,11 +417,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
+  chartTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  chartIcon: {
+    marginRight: 8,
+  },
   chartTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 16,
   },
   chartContainer: {
     marginVertical: 8,

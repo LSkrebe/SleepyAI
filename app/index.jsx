@@ -51,8 +51,14 @@ export default function Journal() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>SleepyAI</Text>
-        <Text style={styles.subtitle}>Your personal sleep companion</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>SleepyAI</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subtitle}>Your personal sleep companion</Text>
+        </View>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+        </View>
       </View>
 
       <View style={[styles.card, styles.todayCard]}>
@@ -223,21 +229,59 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 30,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: '#3B82F6',
+    borderRadius: 100,
+    opacity: 0.1,
+    transform: [{ scale: 1.5 }],
+  },
+  titleContainer: {
+    position: 'relative',
+    zIndex: 2,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: 'white',
-    letterSpacing: 0.5,
+    fontSize: 48,
+    fontWeight: '900',
+    color: '#E2E8F0',
+    letterSpacing: 1,
+    textShadowColor: 'rgba(59, 130, 246, 0.5)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  titleDecoration: {
+    position: 'absolute',
+    bottom: -4,
+    left: 0,
+    width: 60,
+    height: 4,
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
   },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 8,
-    letterSpacing: 0.3,
+    fontSize: 18,
+    color: '#94A3B8',
+    marginTop: 12,
+    letterSpacing: 0.5,
+    fontWeight: '500',
   },
   card: {
     backgroundColor: '#1E293B',
