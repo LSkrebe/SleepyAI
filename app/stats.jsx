@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { LineChart, BarChart } from 'react-native-chart-kit';
-import { Activity, Brain, Clock, ThermometerSun, Volume2, Sun } from 'lucide-react-native';
+import { LineChart } from 'react-native-chart-kit';
+import { Activity, Brain, Clock, Sun } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
-const chartWidth = screenWidth - 64; // 32px padding on each side
+const chartWidth = screenWidth - 32;
 
 const generateData = (days) => {
   return Array.from({ length: days }, (_, i) => ({
     date: `Day ${i + 1}`,
     sleepQuality: Math.random() * 100,
-    deepSleep: Math.random() * 3,
-    lightSleep: Math.random() * 4,
-    remSleep: Math.random() * 2,
   }));
 };
 
@@ -21,26 +18,29 @@ export default function Stats() {
   const [data] = useState(() => generateData(7));
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: '#0F172A',
+    backgroundGradientFrom: '#0F172A',
+    backgroundGradientTo: '#0F172A',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    color: (opacity = 1) => `rgba(226, 232, 240, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForLabels: {
       fontSize: Math.min(12, screenWidth / 35),
+      fill: '#94A3B8',
     },
     propsForDots: {
       r: '4',
       strokeWidth: '2',
+      stroke: '#E2E8F0',
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
+      stroke: '#334155',
     },
-    paddingLeft: 40,
-    paddingRight: 40,
+    paddingLeft: 15,
+    paddingRight: 15,
   };
 
   const sleepQualityData = {
@@ -48,27 +48,6 @@ export default function Stats() {
     datasets: [{
       data: data.map(d => d.sleepQuality),
     }],
-  };
-
-  const sleepStagesData = {
-    labels: data.map(d => d.date),
-    datasets: [
-      {
-        data: data.map(d => d.deepSleep),
-        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-        strokeWidth: 2,
-      },
-      {
-        data: data.map(d => d.lightSleep),
-        color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-        strokeWidth: 2,
-      },
-      {
-        data: data.map(d => d.remSleep),
-        color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
-        strokeWidth: 2,
-      },
-    ],
   };
 
   return (
@@ -123,36 +102,16 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <Text style={styles.chartTitle}>Sleep Quality Trend</Text>
-        <LineChart
-          data={sleepQualityData}
-          width={chartWidth}
-          height={220}
-          chartConfig={chartConfig}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-
-      <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Sleep Stages</Text>
-        <BarChart
-          data={sleepStagesData}
-          width={chartWidth}
-          height={220}
-          chartConfig={chartConfig}
-          style={styles.chart}
-          showBarTops={false}
-          fromZero
-          withInnerLines={false}
-          withOuterLines={true}
-          withHorizontalLabels={true}
-          withVerticalLabels={true}
-          withDots={false}
-          withShadow={false}
-          withVerticalLines={false}
-          withHorizontalLines={true}
-          segments={4}
-        />
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={sleepQualityData}
+            width={chartWidth}
+            height={220}
+            chartConfig={chartConfig}
+            bezier
+            style={styles.chart}
+          />
+        </View>
       </View>
     </ScrollView>
   );
@@ -161,23 +120,26 @@ export default function Stats() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#0F172A',
   },
   header: {
-    padding: 20,
-    backgroundColor: 'white',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#1E293B',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#334155',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#E2E8F0',
     marginBottom: 16,
+    letterSpacing: 0.5,
   },
   timeRangeSelector: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#0F172A',
     borderRadius: 8,
     padding: 4,
   },
@@ -189,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeRangeButtonActive: {
-    backgroundColor: 'white',
+    backgroundColor: '#1E293B',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -200,11 +162,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   timeRangeText: {
-    color: '#6B7280',
+    color: '#94A3B8',
     fontWeight: '500',
   },
   timeRangeTextActive: {
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -213,56 +175,62 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   metricCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: 'white',
-    borderRadius: 12,
+    width: '47%',
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   metricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B82F6',
+    color: '#E2E8F0',
     marginTop: 8,
   },
   metricLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginTop: 4,
   },
   chartCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
     padding: 16,
-    margin: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    overflow: 'hidden',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   chartTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#E2E8F0',
     marginBottom: 16,
   },
-  chart: {
+  chartContainer: {
     marginVertical: 8,
+    alignItems: 'center',
+    backgroundColor: '#0F172A',
     borderRadius: 16,
-    paddingRight: 0,
+    padding: 12,
+    paddingBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  chart: {
+    marginVertical: 4,
+    marginLeft: -20,
+    borderRadius: 16,
+    alignSelf: 'center',
   },
 }); 

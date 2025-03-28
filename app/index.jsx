@@ -4,7 +4,7 @@ import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Acti
 import { LineChart } from 'react-native-chart-kit';
 
 const { width: screenWidth } = Dimensions.get('window');
-const chartWidth = screenWidth - 96; // Increased padding to 48px on each side
+const chartWidth = screenWidth - 32; // Adjusted to match stats page
 
 export default function Journal() {
   const [sleepQuality, setSleepQuality] = useState(85);
@@ -46,15 +46,6 @@ export default function Journal() {
     },
     paddingLeft: 15,
     paddingRight: 15,
-    barPercentage: 0.7,
-    useShadowColorFromDataset: false,
-    withInnerLines: true,
-    withOuterLines: true,
-    withHorizontalLabels: true,
-    withVerticalLabels: true,
-    withDots: true,
-    withVerticalLines: true,
-    withHorizontalLines: true,
   };
 
   return (
@@ -351,11 +342,12 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
   },
   chartContainer: {
-    marginVertical: 16,
+    marginVertical: 8,
     alignItems: 'center',
     backgroundColor: '#0F172A',
     borderRadius: 16,
-    padding: 16,
+    padding: 12,
+    paddingBottom: 0,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -365,9 +357,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     width: '100%',
+    overflow: 'hidden',
   },
   chart: {
-    marginVertical: 8,
+    marginVertical: 4,
+    marginLeft: -20,
     borderRadius: 16,
     alignSelf: 'center',
   },
