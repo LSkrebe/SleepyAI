@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Activity } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 
@@ -14,6 +14,54 @@ export default function Journal() {
   const [noise, setNoise] = useState(30);
   const [light, setLight] = useState(0);
   const [sleepCycles, setSleepCycles] = useState(4);
+
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(50)).current;
+  const slideUpAnim2 = useRef(new Animated.Value(50)).current;
+  const slideUpAnim3 = useRef(new Animated.Value(50)).current;
+  const slideUpAnim4 = useRef(new Animated.Value(50)).current;
+  const slideUpAnim5 = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    // Start animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim2, {
+        toValue: 0,
+        duration: 800,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim3, {
+        toValue: 0,
+        duration: 800,
+        delay: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim4, {
+        toValue: 0,
+        duration: 800,
+        delay: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim5, {
+        toValue: 0,
+        duration: 800,
+        delay: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const sleepQualityData = {
     labels: ['22', '23', '0', '1', '2', '3', '4', '5', '6', '7'],
@@ -53,7 +101,7 @@ export default function Journal() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>SleepyAI</Text>
           <View style={styles.titleDecoration} />
@@ -62,9 +110,9 @@ export default function Journal() {
         <View style={styles.headerBackground}>
           <View style={styles.headerGlow} />
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.card, styles.todayCard]}>
+      <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }] }]}>
         <View style={styles.cardHeader}>
           <View style={styles.todayIconContainer}>
             <Moon size={28} color="#3B82F6" />
@@ -88,9 +136,9 @@ export default function Journal() {
             <Text style={styles.statLabel}>Cycles</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.card, styles.chartCard]}>
+      <Animated.View style={[styles.card, styles.chartCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
         <View style={styles.cardHeader}>
           <Activity size={28} color="#3B82F6" />
           <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
@@ -148,9 +196,9 @@ export default function Journal() {
             </View>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.card, styles.cyclesCard]}>
+      <Animated.View style={[styles.card, styles.cyclesCard, { transform: [{ translateY: slideUpAnim3 }] }]}>
         <View style={styles.cardHeader}>
           <Timer size={28} color="#3B82F6" />
           <Text style={[styles.cardTitle, styles.cyclesTitle]}>Today's Sleep Cycles</Text>
@@ -172,9 +220,9 @@ export default function Journal() {
             <Text style={styles.cycleLabel}>Avg Duration</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.card, styles.insightsCard]}>
+      <Animated.View style={[styles.card, styles.insightsCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
         <View style={styles.cardHeader}>
           <Brain size={28} color="#3B82F6" />
           <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
@@ -208,9 +256,9 @@ export default function Journal() {
             </View>
           </View>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={[styles.card, styles.alarmCard]}>
+      <Animated.View style={[styles.card, styles.alarmCard, { transform: [{ translateY: slideUpAnim5 }] }]}>
         <View style={styles.cardHeader}>
           <BellRing size={28} color="#3B82F6" />
           <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
@@ -225,7 +273,7 @@ export default function Journal() {
             <Text style={styles.alarmSubtext}>7 hours from now</Text>
           </View>
         </View>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
