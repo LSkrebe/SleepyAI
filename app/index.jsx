@@ -49,7 +49,10 @@ export default function Journal() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>SleepyAI</Text>
@@ -231,6 +234,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F172A',
+  },
+  contentContainer: {
+    paddingBottom: 50, // Reduced padding to prevent navbar clipping
   },
   header: {
     paddingTop: 60,

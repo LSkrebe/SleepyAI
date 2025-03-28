@@ -160,7 +160,10 @@ export default function Stats() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Sleep Statistics</Text>
@@ -342,6 +345,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0F172A',
+  },
+  contentContainer: {
+    paddingBottom: 50,
   },
   header: {
     paddingTop: 60,

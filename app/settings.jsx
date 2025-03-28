@@ -1,17 +1,55 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database } from 'lucide-react-native';
+
+const CustomToggle = ({ value, onValueChange }) => {
+  const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  React.useEffect(() => {
+    Animated.spring(toggleAnimation, {
+      toValue: value ? 1 : 0,
+      useNativeDriver: true,
+      friction: 8,
+      tension: 40,
+    }).start();
+  }, [value]);
+
+  const translateX = toggleAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 24],
+  });
+
+  return (
+    <TouchableOpacity
+      onPress={onValueChange}
+      style={[
+        styles.toggleContainer,
+        { backgroundColor: value ? 'rgba(59, 130, 246, 0.3)' : '#1E293B' }
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.toggleThumb,
+          {
+            transform: [{ translateX }],
+            backgroundColor: value ? '#3B82F6' : '#64748B',
+            borderColor: value ? '#3B82F6' : '#334155',
+          },
+        ]}
+      />
+    </TouchableOpacity>
+  );
+};
 
 export default function Settings() {
   const [settings, setSettings] = useState({
     sleepDetection: true,
     environmentalMonitoring: true,
     smartWake: true,
-    alerts: true,
-    privacy: true,
-    batteryOptimization: true,
-    sensorCalibration: false,
-    dataExport: false,
+    sleepReminders: true,
+    wakeUpReminders: true,
+    dataCollection: true,
+    analytics: true,
   });
 
   const toggleSetting = (key) => {
@@ -21,112 +59,150 @@ export default function Settings() {
     }));
   };
 
-  const SettingItem = ({ icon: Icon, title, description, value, onToggle, showToggle = true }) => (
-    <TouchableOpacity
-      style={styles.settingItem}
-      onPress={() => showToggle ? onToggle() : null}
-    >
-      <View style={styles.settingItemLeft}>
-        <View style={styles.iconContainer}>
-          <Icon size={20} color="#3B82F6" />
-        </View>
-        <View style={styles.settingItemContent}>
-          <Text style={styles.settingItemTitle}>{title}</Text>
-          {description && (
-            <Text style={styles.settingItemDescription}>{description}</Text>
-          )}
-        </View>
+  const renderSection = (title, children) => (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
       </View>
-      {showToggle ? (
-        <Switch
-          value={value}
-          onValueChange={onToggle}
-          trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-          thumbColor={value ? '#3B82F6' : '#9CA3AF'}
-        />
-      ) : (
-        <ChevronRight size={20} color="#9CA3AF" />
-      )}
-    </TouchableOpacity>
+      {children}
+    </View>
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Settings</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subtitle}>Customize your sleep experience</Text>
+        </View>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+        </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Sleep Tracking</Text>
-        <SettingItem
-          icon={Moon}
-          title="Sleep Detection"
-          description="Automatically detect when you're sleeping"
-          value={settings.sleepDetection}
-          onToggle={() => toggleSetting('sleepDetection')}
-        />
-        <SettingItem
-          icon={Thermometer}
-          title="Environmental Monitoring"
-          description="Track room temperature and humidity"
-          value={settings.environmentalMonitoring}
-          onToggle={() => toggleSetting('environmentalMonitoring')}
-        />
-        <SettingItem
-          icon={Sun}
-          title="Smart Wake"
-          description="Wake up during light sleep phase"
-          value={settings.smartWake}
-          onToggle={() => toggleSetting('smartWake')}
-        />
-      </View>
+      {renderSection('Sleep Tracking', (
+        <>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Moon size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Sleep Detection</Text>
+                <Text style={styles.settingItemDescription}>Automatically detect when you're sleeping</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.sleepDetection} 
+              onValueChange={() => toggleSetting('sleepDetection')} 
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Thermometer size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Environmental Monitoring</Text>
+                <Text style={styles.settingItemDescription}>Track room temperature and humidity</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.environmentalMonitoring} 
+              onValueChange={() => toggleSetting('environmentalMonitoring')} 
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Sun size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Smart Wake</Text>
+                <Text style={styles.settingItemDescription}>Wake up during light sleep phase</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.smartWake} 
+              onValueChange={() => toggleSetting('smartWake')} 
+            />
+          </View>
+        </>
+      ))}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <SettingItem
-          icon={Bell}
-          title="Alert Settings"
-          description="Configure sleep-related notifications"
-          value={settings.alerts}
-          onToggle={() => toggleSetting('alerts')}
-        />
-      </View>
+      {renderSection('Notifications', (
+        <>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Bell size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Sleep Reminders</Text>
+                <Text style={styles.settingItemDescription}>Get notified when it's time to sleep</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.sleepReminders} 
+              onValueChange={() => toggleSetting('sleepReminders')} 
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Bell size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Wake Up Reminders</Text>
+                <Text style={styles.settingItemDescription}>Get notified when it's time to wake up</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.wakeUpReminders} 
+              onValueChange={() => toggleSetting('wakeUpReminders')} 
+            />
+          </View>
+        </>
+      ))}
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Privacy & Data</Text>
-        <SettingItem
-          icon={Lock}
-          title="Privacy Settings"
-          description="Manage your data privacy"
-          value={settings.privacy}
-          onToggle={() => toggleSetting('privacy')}
-        />
-        <SettingItem
-          icon={Battery}
-          title="Battery Optimization"
-          description="Optimize app battery usage"
-          value={settings.batteryOptimization}
-          onToggle={() => toggleSetting('batteryOptimization')}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Advanced</Text>
-        <SettingItem
-          icon={SettingsIcon}
-          title="Sensor Calibration"
-          description="Calibrate sleep detection sensors"
-          value={settings.sensorCalibration}
-          onToggle={() => toggleSetting('sensorCalibration')}
-        />
-        <SettingItem
-          icon={Download}
-          title="Data Export"
-          description="Export your sleep data"
-          value={settings.dataExport}
-          onToggle={() => toggleSetting('dataExport')}
-        />
-      </View>
+      {renderSection('Privacy & Data', (
+        <>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Lock size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Data Collection</Text>
+                <Text style={styles.settingItemDescription}>Control what data is collected</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.dataCollection} 
+              onValueChange={() => toggleSetting('dataCollection')} 
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingItemLeft}>
+              <View style={styles.iconContainer}>
+                <Lock size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.settingItemContent}>
+                <Text style={styles.settingItemTitle}>Analytics</Text>
+                <Text style={styles.settingItemDescription}>Help improve the app</Text>
+              </View>
+            </View>
+            <CustomToggle 
+              value={settings.analytics} 
+              onValueChange={() => toggleSetting('analytics')} 
+            />
+          </View>
+        </>
+      ))}
     </ScrollView>
   );
 }
@@ -134,30 +210,82 @@ export default function Settings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#0F172A',
+  },
+  contentContainer: {
+    paddingBottom: 50,
   },
   header: {
-    padding: 20,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#0F172A',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: '#3B82F6',
+    borderRadius: 100,
+    opacity: 0.1,
+    transform: [{ scale: 1.5 }],
+  },
+  titleContainer: {
+    position: 'relative',
+    zIndex: 2,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    letterSpacing: 0.5,
+  },
+  titleDecoration: {
+    position: 'absolute',
+    bottom: -4,
+    left: 0,
+    width: 40,
+    height: 3,
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#94A3B8',
+    marginTop: 8,
+    letterSpacing: 0.3,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     marginTop: 16,
-    paddingVertical: 8,
+    marginHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    padding: 16,
+    paddingBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   settingItem: {
     flexDirection: 'row',
@@ -165,7 +293,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#334155',
   },
   settingItemLeft: {
     flexDirection: 'row',
@@ -176,7 +304,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -187,11 +315,26 @@ const styles = StyleSheet.create({
   settingItemTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1F2937',
+    color: '#E2E8F0',
   },
   settingItemDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginTop: 2,
+  },
+  toggleContainer: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: '#334155',
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1,
   },
 }); 

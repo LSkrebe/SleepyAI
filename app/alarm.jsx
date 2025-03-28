@@ -53,7 +53,10 @@ export default function Alarm() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.timeCard}>
           <View style={styles.timeHeader}>
             <BellRing size={24} color="#3B82F6" />
@@ -249,6 +252,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 50,
   },
   timeCard: {
     backgroundColor: '#1E293B',
