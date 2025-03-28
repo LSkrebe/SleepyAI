@@ -63,8 +63,13 @@ export default function Journal() {
 
       <View style={[styles.card, styles.todayCard]}>
         <View style={styles.cardHeader}>
-          <Moon size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.todayTitle]}>Today's Sleep</Text>
+          <View style={styles.todayIconContainer}>
+            <Moon size={28} color="#3B82F6" />
+          </View>
+          <View style={styles.todayHeaderContent}>
+            <Text style={[styles.cardTitle, styles.todayTitle]}>Today's Sleep</Text>
+            <Text style={styles.todayDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+          </View>
         </View>
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
@@ -85,7 +90,7 @@ export default function Journal() {
       <View style={[styles.card, styles.chartCard]}>
         <View style={styles.cardHeader}>
           <Activity size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.chartTitle]}>Today's Sleep Quality Trend</Text>
+          <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -284,7 +289,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   card: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 16,
@@ -334,7 +339,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   alarmCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -376,7 +381,7 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   chartCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -431,16 +436,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#0F172A',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   metricIconContainer: {
     width: 32,
@@ -451,16 +458,20 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   metricItemTemperature: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#EF4444',
   },
   metricItemHumidity: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#0EA5E9',
   },
   metricItemNoise: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#8B5CF6',
   },
   metricItemLight: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#F59E0B',
   },
   metricContent: {
     flex: 1,
@@ -476,7 +487,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cyclesCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -525,7 +536,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   insightsCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -568,13 +579,30 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   todayCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3B82F6',
     padding: 24,
+  },
+  todayHeaderContent: {
+    marginLeft: 12,
+    flex: 1,
   },
   todayTitle: {
     fontSize: 22,
     color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  todayDate: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginLeft: 8,
+  },
+  todayIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 }); 

@@ -20,7 +20,7 @@ const generateData = (days) => {
 };
 
 export default function Stats() {
-  const [timeRange, setTimeRange] = useState('Daily');
+  const [timeRange, setTimeRange] = useState('daily');
   const [data] = useState(() => generateData(7));
 
   const baseChartConfig = {
@@ -162,28 +162,35 @@ export default function Stats() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Sleep Statistics</Text>
-        <View style={styles.timeRangeSelector}>
-          {['Daily', 'Weekly', 'Monthly'].map((range) => (
-            <TouchableOpacity
-              key={range}
-              style={[
-                styles.timeRangeButton,
-                timeRange === range && styles.timeRangeButtonActive,
-              ]}
-              onPress={() => setTimeRange(range)}
-            >
-              <Text
-                style={[
-                  styles.timeRangeText,
-                  timeRange === range && styles.timeRangeTextActive,
-                ]}
-              >
-                {range}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Sleep Statistics</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subtitle}>Track your sleep patterns</Text>
         </View>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+        </View>
+      </View>
+
+      <View style={styles.timeSelectorContainer}>
+        <TouchableOpacity 
+          style={[styles.timeSelectorButton, timeRange === 'daily' && styles.timeSelectorButtonActive]}
+          onPress={() => setTimeRange('daily')}
+        >
+          <Text style={[styles.timeSelectorText, timeRange === 'daily' && styles.timeSelectorTextActive]}>Daily</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.timeSelectorButton, timeRange === 'weekly' && styles.timeSelectorButtonActive]}
+          onPress={() => setTimeRange('weekly')}
+        >
+          <Text style={[styles.timeSelectorText, timeRange === 'weekly' && styles.timeSelectorTextActive]}>Weekly</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.timeSelectorButton, timeRange === 'monthly' && styles.timeSelectorButtonActive]}
+          onPress={() => setTimeRange('monthly')}
+        >
+          <Text style={[styles.timeSelectorText, timeRange === 'monthly' && styles.timeSelectorTextActive]}>Monthly</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.metricsGrid}>
@@ -338,49 +345,83 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 40,
     paddingHorizontal: 16,
-    backgroundColor: '#1E293B',
-    borderBottomWidth: 1,
-    borderBottomColor: '#334155',
+    backgroundColor: '#0F172A',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  headerGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: '#3B82F6',
+    borderRadius: 100,
+    opacity: 0.1,
+    transform: [{ scale: 1.5 }],
+  },
+  titleContainer: {
+    position: 'relative',
+    zIndex: 2,
   },
   title: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#E2E8F0',
-    marginBottom: 16,
     letterSpacing: 0.5,
   },
-  timeRangeSelector: {
-    flexDirection: 'row',
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    padding: 4,
+  titleDecoration: {
+    position: 'absolute',
+    bottom: -4,
+    left: 0,
+    width: 40,
+    height: 3,
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
   },
-  timeRangeButton: {
-    flex: 1,
-    paddingVertical: 8,
+  subtitle: {
+    fontSize: 16,
+    color: '#94A3B8',
+    marginTop: 8,
+    letterSpacing: 0.5,
+  },
+  timeSelectorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    marginBottom: 16,
+  },
+  timeSelectorButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
   },
-  timeRangeButtonActive: {
-    backgroundColor: '#1E293B',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  timeSelectorButtonActive: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#3B82F6',
   },
-  timeRangeText: {
-    color: '#94A3B8',
+  timeSelectorText: {
+    fontSize: 14,
     fontWeight: '500',
+    color: '#94A3B8',
   },
-  timeRangeTextActive: {
-    color: '#E2E8F0',
+  timeSelectorTextActive: {
+    color: '#3B82F6',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -390,9 +431,9 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     width: '47%',
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderRadius: 16,
-    padding: 16,
+    padding: 24,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#334155',
@@ -409,7 +450,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   chartCard: {
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderRadius: 16,
     padding: 16,
     marginHorizontal: 16,
@@ -453,5 +494,57 @@ const styles = StyleSheet.create({
     marginLeft: -20,
     borderRadius: 16,
     alignSelf: 'center',
+  },
+  card: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  metricItem: {
+    flex: 1,
+    minWidth: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  metricItemTemperature: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#EF4444',
+  },
+  metricItemHumidity: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#0EA5E9',
+  },
+  metricItemNoise: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#8B5CF6',
+  },
+  metricItemLight: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderColor: '#F59E0B',
   },
 }); 
