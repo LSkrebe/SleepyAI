@@ -23,26 +23,26 @@ export default function Journal() {
   };
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: '#0F172A',
+    backgroundGradientFrom: '#0F172A',
+    backgroundGradientTo: '#0F172A',
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+    color: (opacity = 1) => `rgba(226, 232, 240, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForLabels: {
       fontSize: Math.min(10, screenWidth / 40),
-      fill: '#6B7280',
+      fill: '#94A3B8',
     },
     propsForDots: {
       r: '5',
       strokeWidth: '2',
-      stroke: '#3B82F6',
+      stroke: '#E2E8F0',
     },
     propsForBackgroundLines: {
       strokeDasharray: '3,3',
-      stroke: '#E5E7EB',
+      stroke: '#334155',
     },
     paddingLeft: 15,
     paddingRight: 15,
@@ -228,22 +228,13 @@ export default function Journal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#0F172A',
   },
   header: {
-    padding: 24,
-    backgroundColor: '#3B82F6',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    backgroundColor: '#0F172A',
   },
   title: {
     fontSize: 32,
@@ -254,11 +245,11 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 4,
+    marginTop: 8,
     letterSpacing: 0.3,
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: '#1E293B',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 16,
@@ -271,6 +262,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -281,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginLeft: 8,
-    color: '#1F2937',
+    color: '#E2E8F0',
   },
   sleepStats: {
     flexDirection: 'row',
@@ -293,27 +286,27 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   statLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginTop: 4,
   },
   insightText: {
     fontSize: 16,
-    color: '#4B5563',
+    color: '#CBD5E1',
     lineHeight: 24,
   },
   alarmCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     padding: 24,
   },
   alarmTitle: {
     fontSize: 22,
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   alarmContainer: {
     flexDirection: 'row',
@@ -328,11 +321,11 @@ const styles = StyleSheet.create({
   alarmTime: {
     fontSize: 48,
     fontWeight: '800',
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   alarmPeriod: {
     fontSize: 24,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginLeft: 4,
   },
   alarmInfo: {
@@ -340,27 +333,27 @@ const styles = StyleSheet.create({
   },
   alarmLabel: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginBottom: 4,
   },
   alarmSubtext: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#64748B',
   },
   chartCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     padding: 24,
   },
   chartTitle: {
     fontSize: 22,
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   chartContainer: {
     marginVertical: 16,
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#0F172A',
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
@@ -387,7 +380,7 @@ const styles = StyleSheet.create({
   metricsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#E2E8F0',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -400,7 +393,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: 'white',
+    backgroundColor: '#0F172A',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
@@ -420,16 +413,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   metricItemTemperature: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: '#1E293B',
   },
   metricItemHumidity: {
-    backgroundColor: '#E0F2FE',
+    backgroundColor: '#1E293B',
   },
   metricItemNoise: {
-    backgroundColor: '#F3E8FD',
+    backgroundColor: '#1E293B',
   },
   metricItemLight: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#1E293B',
   },
   metricContent: {
     flex: 1,
@@ -437,22 +430,22 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#E2E8F0',
   },
   metricLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginTop: 2,
   },
   cyclesCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     padding: 24,
   },
   cyclesTitle: {
     fontSize: 22,
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   cyclesContainer: {
     flexDirection: 'row',
@@ -471,37 +464,37 @@ const styles = StyleSheet.create({
   cycleValue: {
     fontSize: 36,
     fontWeight: '800',
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   cycleUnit: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginLeft: 4,
   },
   cycleLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
     marginTop: 8,
   },
   cycleDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#334155',
   },
   divider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#334155',
     marginVertical: 16,
   },
   insightsCard: {
-    backgroundColor: '#F0F7FF',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     padding: 24,
   },
   insightsTitle: {
     fontSize: 22,
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
   insightsContainer: {
     gap: 16,
@@ -515,7 +508,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'white',
+    backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -533,17 +526,17 @@ const styles = StyleSheet.create({
   insightTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#E2E8F0',
     marginBottom: 4,
   },
   todayCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 2,
-    borderColor: '#3B82F6',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     padding: 24,
   },
   todayTitle: {
     fontSize: 22,
-    color: '#3B82F6',
+    color: '#E2E8F0',
   },
 }); 
