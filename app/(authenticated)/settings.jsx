@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database } from 'lucide-react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
+import { router } from 'expo-router';
 
 const CustomToggle = ({ value, onValueChange }) => {
   const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -51,6 +53,17 @@ export default function Settings() {
     dataCollection: true,
     analytics: true,
   });
+
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
 
   const toggleSetting = (key) => {
     setSettings(prev => ({
@@ -202,6 +215,21 @@ export default function Settings() {
             />
           </View>
         </>
+      ))}
+
+      {renderSection('Account', (
+        <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+          <View style={styles.settingItemLeft}>
+            <View style={styles.iconContainer}>
+              <LogOut size={20} color="#EF4444" />
+            </View>
+            <View style={styles.settingItemContent}>
+              <Text style={[styles.settingItemTitle, { color: '#EF4444' }]}>Logout</Text>
+              <Text style={styles.settingItemDescription}>Sign out of your account</Text>
+            </View>
+          </View>
+          <ChevronRight size={20} color="#EF4444" />
+        </TouchableOpacity>
       ))}
     </ScrollView>
   );
