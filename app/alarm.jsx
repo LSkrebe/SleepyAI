@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput } from 'react-native';
-import { BellRing, Moon, Sun, ChevronDown } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput, Alert } from 'react-native';
+import { BellRing, Moon, Sun, ChevronDown, X } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -10,10 +10,13 @@ export default function Alarm() {
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
+  const [isAlarmActive, setIsAlarmActive] = useState(false);
+  const [showAlarmModal, setShowAlarmModal] = useState(false);
   
   const workDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const weekendDays = ['Sat', 'Sun'];
-  
+  const allDays = [...workDays, ...weekendDays];
+
   const toggleDay = (day) => {
     if (selectedDays.includes(day)) {
       setSelectedDays(selectedDays.filter(d => d !== day));
@@ -35,9 +38,33 @@ export default function Alarm() {
       const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       setSelectedTime(formattedTime);
       setShowTimePicker(false);
-      setCustomHours('');
-      setCustomMinutes('');
     }
+  };
+
+  const stopAlarm = () => {
+    setShowAlarmModal(false);
+    setIsAlarmActive(false);
+  };
+
+  const scheduleAlarm = () => {
+    setIsAlarmActive(true);
+    Alert.alert('Alarm Set', `Alarm will trigger at ${selectedTime} on selected days`);
+  };
+
+  const cancelAlarm = () => {
+    stopAlarm();
+    Alert.alert('Alarm Cancelled', 'The alarm has been cancelled');
+  };
+
+  const getSortedDays = () => {
+    return selectedDays.sort((a, b) => allDays.indexOf(a) - allDays.indexOf(b));
+  };
+
+  const openTimePicker = () => {
+    const [hours, minutes] = selectedTime.split(':');
+    setCustomHours(hours);
+    setCustomMinutes(minutes);
+    setShowTimePicker(true);
   };
 
   return (
@@ -64,57 +91,39 @@ export default function Alarm() {
           </View>
           
           <TouchableOpacity 
-            style={styles.timeButton}
-            onPress={() => setShowTimePicker(true)}
+            style={[
+              styles.timeButton,
+              isAlarmActive && styles.timeButtonDisabled
+            ]}
+            onPress={openTimePicker}
+            disabled={isAlarmActive}
           >
-            <Text style={styles.timeDisplay}>{selectedTime}</Text>
-            <ChevronDown size={24} color="#94A3B8" />
+            <View style={styles.timeButtonContent}>
+              <Text style={[
+                styles.timeDisplay,
+                isAlarmActive && styles.timeDisplayDisabled
+              ]}>{selectedTime}</Text>
+              <Text style={[
+                styles.selectedDaysText,
+                isAlarmActive && styles.selectedDaysTextDisabled
+              ]}>
+                {getSortedDays().join(', ')}
+              </Text>
+            </View>
+            {!isAlarmActive && <ChevronDown size={24} color="#94A3B8" />}
           </TouchableOpacity>
 
-          <View style={styles.daysContainer}>
-            <View style={styles.daysGrid}>
-              {workDays.map((day) => (
-                <TouchableOpacity
-                  key={day}
-                  style={[
-                    styles.dayButton,
-                    selectedDays.includes(day) && styles.dayButtonActive,
-                  ]}
-                  onPress={() => toggleDay(day)}
-                >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      selectedDays.includes(day) && styles.dayTextActive,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.daysGrid}>
-              {weekendDays.map((day) => (
-                <TouchableOpacity
-                  key={day}
-                  style={[
-                    styles.dayButton,
-                    selectedDays.includes(day) && styles.dayButtonActive,
-                  ]}
-                  onPress={() => toggleDay(day)}
-                >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      selectedDays.includes(day) && styles.dayTextActive,
-                    ]}
-                  >
-                    {day}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.alarmButton,
+              isAlarmActive ? styles.alarmButtonActive : styles.alarmButtonInactive
+            ]}
+            onPress={isAlarmActive ? cancelAlarm : scheduleAlarm}
+          >
+            <Text style={styles.alarmButtonText}>
+              {isAlarmActive ? 'Cancel Alarm' : 'Set Alarm'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.featuresRow}>
@@ -182,13 +191,84 @@ export default function Alarm() {
                   />
                 </View>
               </View>
-              <TouchableOpacity 
-                style={styles.customTimeSubmit}
-                onPress={handleCustomTimeSubmit}
-              >
-                <Text style={styles.customTimeSubmitText}>Set Time</Text>
+            </View>
+
+            <View style={styles.daysContainer}>
+              <View style={styles.daysGrid}>
+                {workDays.map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.dayButton,
+                      selectedDays.includes(day) && styles.dayButtonActive,
+                    ]}
+                    onPress={() => toggleDay(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        selectedDays.includes(day) && styles.dayTextActive,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <View style={styles.daysGrid}>
+                {weekendDays.map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    style={[
+                      styles.dayButton,
+                      selectedDays.includes(day) && styles.dayButtonActive,
+                    ]}
+                    onPress={() => toggleDay(day)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        selectedDays.includes(day) && styles.dayTextActive,
+                      ]}
+                    >
+                      {day}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.customTimeSubmit}
+              onPress={handleCustomTimeSubmit}
+            >
+              <Text style={styles.customTimeSubmitText}>Set Time</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showAlarmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={stopAlarm}
+      >
+        <View style={styles.alarmModalOverlay}>
+          <View style={styles.alarmModalContent}>
+            <View style={styles.alarmModalHeader}>
+              <Text style={styles.alarmModalTitle}>Time to Wake Up!</Text>
+              <TouchableOpacity onPress={stopAlarm}>
+                <X size={24} color="#E2E8F0" />
               </TouchableOpacity>
             </View>
+            <Text style={styles.alarmModalTime}>{selectedTime}</Text>
+            <TouchableOpacity
+              style={styles.stopAlarmButton}
+              onPress={stopAlarm}
+            >
+              <Text style={styles.stopAlarmButtonText}>Stop Alarm</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -286,39 +366,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
   },
+  timeButtonContent: {
+    flex: 1,
+  },
   timeDisplay: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#3B82F6',
   },
-  daysContainer: {
-    marginTop: 16,
-  },
-  daysGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  dayButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  dayButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  dayText: {
+  selectedDaysText: {
+    fontSize: 14,
     color: '#94A3B8',
-    fontWeight: '500',
-  },
-  dayTextActive: {
-    color: 'white',
+    marginTop: 4,
   },
   featuresRow: {
     flexDirection: 'row',
@@ -360,7 +419,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#334155',
-    maxHeight: '40%',
+    maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -379,12 +438,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   customTimeContainer: {
-    padding: 20,
+    paddingHorizontal: 0,
+    marginBottom: 16,
   },
   customTimeInputs: {
     flexDirection: 'row',
     gap: 16,
-    marginBottom: 20,
+    paddingHorizontal: 0,
   },
   customTimeInputGroup: {
     flex: 1,
@@ -409,10 +469,114 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
+    width: '100%',
   },
   customTimeSubmitText: {
     color: '#E2E8F0',
     fontSize: 16,
     fontWeight: '600',
+  },
+  alarmButton: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  alarmButtonActive: {
+    backgroundColor: '#EF4444',
+  },
+  alarmButtonInactive: {
+    backgroundColor: '#3B82F6',
+  },
+  alarmButtonText: {
+    color: '#E2E8F0',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  alarmModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alarmModalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '80%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  alarmModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 16,
+  },
+  alarmModalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#E2E8F0',
+  },
+  alarmModalTime: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: '#3B82F6',
+    marginBottom: 24,
+  },
+  stopAlarmButton: {
+    backgroundColor: '#EF4444',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  stopAlarmButtonText: {
+    color: '#E2E8F0',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  daysContainer: {
+    marginBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#334155',
+    paddingTop: 16,
+  },
+  daysGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+  },
+  dayButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  dayButtonActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  dayText: {
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  dayTextActive: {
+    color: 'white',
+  },
+  timeButtonDisabled: {
+    opacity: 0.7,
+    borderColor: '#475569',
+  },
+  timeDisplayDisabled: {
+    color: '#3B82F6',
+  },
+  selectedDaysTextDisabled: {
+    color: '#64748B',
   },
 }); 
