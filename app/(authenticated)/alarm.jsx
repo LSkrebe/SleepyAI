@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput } from 'react-native';
 import { BellRing, Moon, Sun, ChevronDown, X } from 'lucide-react-native';
+import { Audio } from 'expo-av';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -12,10 +13,50 @@ export default function Alarm() {
   const [customMinutes, setCustomMinutes] = useState('');
   const [isAlarmActive, setIsAlarmActive] = useState(false);
   const [showAlarmModal, setShowAlarmModal] = useState(false);
+  const [sound, setSound] = useState(null);
+  const [snoozeTimeout, setSnoozeTimeout] = useState(null);
+  const [alarmTimeout, setAlarmTimeout] = useState(null);
   
   const workDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const weekendDays = ['Sat', 'Sun'];
   const allDays = [...workDays, ...weekendDays];
+
+  useEffect(() => {
+    // Initialize audio
+    async function setupAudio() {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+
+        const { sound } = await Audio.Sound.createAsync(
+          require('../../assets/alarm.mp3'),
+          { isLooping: true }
+        );
+        setSound(sound);
+      } catch (error) {
+        console.error('Error setting up audio:', error);
+      }
+    }
+
+    setupAudio();
+
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+      if (snoozeTimeout) {
+        clearTimeout(snoozeTimeout);
+      }
+      if (alarmTimeout) {
+        clearTimeout(alarmTimeout);
+      }
+    };
+  }, []);
 
   const toggleDay = (day) => {
     if (selectedDays.includes(day)) {
@@ -41,11 +82,92 @@ export default function Alarm() {
     }
   };
 
-  const toggleAlarm = () => {
-    setIsAlarmActive(!isAlarmActive);
-    if (!isAlarmActive) {
-      setShowAlarmModal(true);
+  const scheduleAlarm = () => {
+    // Clear any existing alarm
+    if (alarmTimeout) {
+      clearTimeout(alarmTimeout);
     }
+
+    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const now = new Date();
+    const alarmTime = new Date(now);
+    alarmTime.setHours(hours, minutes, 0, 0);
+
+    // If the alarm time is in the past, set it for tomorrow
+    if (alarmTime < now) {
+      alarmTime.setDate(alarmTime.getDate() + 1);
+    }
+
+    const timeUntilAlarm = alarmTime.getTime() - now.getTime();
+    
+    const timeout = setTimeout(async () => {
+      setShowAlarmModal(true);
+      if (sound) {
+        try {
+          await sound.playAsync();
+        } catch (error) {
+          console.error('Error playing sound:', error);
+        }
+      }
+    }, timeUntilAlarm);
+
+    setAlarmTimeout(timeout);
+    setIsAlarmActive(true);
+  };
+
+  const toggleAlarm = async () => {
+    if (!isAlarmActive) {
+      scheduleAlarm();
+    } else {
+      stopAlarm();
+    }
+  };
+
+  const stopAlarm = async () => {
+    if (sound) {
+      try {
+        await sound.stopAsync();
+        await sound.setPositionAsync(0);
+      } catch (error) {
+        console.error('Error stopping sound:', error);
+      }
+    }
+    setShowAlarmModal(false);
+    setIsAlarmActive(false);
+    if (snoozeTimeout) {
+      clearTimeout(snoozeTimeout);
+      setSnoozeTimeout(null);
+    }
+    if (alarmTimeout) {
+      clearTimeout(alarmTimeout);
+      setAlarmTimeout(null);
+    }
+  };
+
+  const snoozeAlarm = async () => {
+    if (sound) {
+      try {
+        await sound.stopAsync();
+        await sound.setPositionAsync(0);
+      } catch (error) {
+        console.error('Error stopping sound:', error);
+      }
+    }
+    setShowAlarmModal(false);
+    
+    // Set snooze timeout for 5 minutes
+    const timeout = setTimeout(async () => {
+      setShowAlarmModal(true);
+      if (sound) {
+        try {
+          await sound.playAsync();
+        } catch (error) {
+          console.error('Error playing sound:', error);
+        }
+      }
+    }, 5 * 60 * 1000); // 5 minutes in milliseconds
+    
+    setSnoozeTimeout(timeout);
   };
 
   const getSortedDays = () => {
@@ -244,23 +366,30 @@ export default function Alarm() {
         visible={showAlarmModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setShowAlarmModal(false)}
+        onRequestClose={stopAlarm}
       >
         <View style={styles.alarmModalOverlay}>
           <View style={styles.alarmModalContent}>
             <View style={styles.alarmModalHeader}>
               <Text style={styles.alarmModalTitle}>Time to Wake Up!</Text>
-              <TouchableOpacity onPress={() => setShowAlarmModal(false)}>
-                <X size={24} color="#E2E8F0" />
+            </View>
+            <View style={styles.alarmModalTimeContainer}>
+              <Text style={styles.alarmModalTime}>{selectedTime}</Text>
+            </View>
+            <View style={styles.alarmModalButtons}>
+              <TouchableOpacity
+                style={[styles.alarmModalButton, styles.snoozeButton]}
+                onPress={snoozeAlarm}
+              >
+                <Text style={styles.alarmModalButtonText}>Snooze</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.alarmModalButton, styles.stopAlarmButton]}
+                onPress={stopAlarm}
+              >
+                <Text style={styles.alarmModalButtonText}>Stop</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.alarmModalTime}>{selectedTime}</Text>
-            <TouchableOpacity
-              style={styles.stopAlarmButton}
-              onPress={() => setShowAlarmModal(false)}
-            >
-              <Text style={styles.stopAlarmButtonText}>Stop Alarm</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -504,33 +633,49 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   alarmModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     width: '100%',
     marginBottom: 16,
+    alignItems: 'center',
   },
   alarmModalTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#E2E8F0',
+    textAlign: 'center',
+  },
+  alarmModalTimeContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   alarmModalTime: {
     fontSize: 48,
     fontWeight: '800',
     color: '#3B82F6',
-    marginBottom: 24,
+    textAlign: 'center',
   },
-  stopAlarmButton: {
-    backgroundColor: '#EF4444',
+  alarmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  alarmModalButton: {
+    flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
+    alignItems: 'center',
   },
-  stopAlarmButtonText: {
+  snoozeButton: {
+    backgroundColor: '#3B82F6',
+  },
+  alarmModalButtonText: {
     color: '#E2E8F0',
     fontSize: 16,
     fontWeight: '600',
+  },
+  stopAlarmButton: {
+    backgroundColor: '#EF4444',
   },
   daysContainer: {
     marginBottom: 24,
