@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput } from 'react-native';
 import { BellRing, Moon, Sun, ChevronDown, X } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -41,19 +41,11 @@ export default function Alarm() {
     }
   };
 
-  const stopAlarm = () => {
-    setShowAlarmModal(false);
-    setIsAlarmActive(false);
-  };
-
-  const scheduleAlarm = () => {
-    setIsAlarmActive(true);
-    Alert.alert('Alarm Set', `Alarm will trigger at ${selectedTime} on selected days`);
-  };
-
-  const cancelAlarm = () => {
-    stopAlarm();
-    Alert.alert('Alarm Cancelled', 'The alarm has been cancelled');
+  const toggleAlarm = () => {
+    setIsAlarmActive(!isAlarmActive);
+    if (!isAlarmActive) {
+      setShowAlarmModal(true);
+    }
   };
 
   const getSortedDays = () => {
@@ -69,21 +61,21 @@ export default function Alarm() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Alarm</Text>
-          <View style={styles.titleDecoration} />
-          <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
-        </View>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerGlow} />
-        </View>
-      </View>
-
       <ScrollView 
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
       >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Alarm</Text>
+            <View style={styles.titleDecoration} />
+            <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
+          </View>
+          <View style={styles.headerBackground}>
+            <View style={styles.headerGlow} />
+          </View>
+        </View>
+
         <View style={styles.timeCard}>
           <View style={styles.timeHeader}>
             <BellRing size={24} color="#3B82F6" />
@@ -118,7 +110,7 @@ export default function Alarm() {
               styles.alarmButton,
               isAlarmActive ? styles.alarmButtonActive : styles.alarmButtonInactive
             ]}
-            onPress={isAlarmActive ? cancelAlarm : scheduleAlarm}
+            onPress={toggleAlarm}
           >
             <Text style={styles.alarmButtonText}>
               {isAlarmActive ? 'Cancel Alarm' : 'Set Alarm'}
@@ -252,20 +244,20 @@ export default function Alarm() {
         visible={showAlarmModal}
         transparent={true}
         animationType="fade"
-        onRequestClose={stopAlarm}
+        onRequestClose={() => setShowAlarmModal(false)}
       >
         <View style={styles.alarmModalOverlay}>
           <View style={styles.alarmModalContent}>
             <View style={styles.alarmModalHeader}>
               <Text style={styles.alarmModalTitle}>Time to Wake Up!</Text>
-              <TouchableOpacity onPress={stopAlarm}>
+              <TouchableOpacity onPress={() => setShowAlarmModal(false)}>
                 <X size={24} color="#E2E8F0" />
               </TouchableOpacity>
             </View>
             <Text style={styles.alarmModalTime}>{selectedTime}</Text>
             <TouchableOpacity
               style={styles.stopAlarmButton}
-              onPress={stopAlarm}
+              onPress={() => setShowAlarmModal(false)}
             >
               <Text style={styles.stopAlarmButtonText}>Stop Alarm</Text>
             </TouchableOpacity>
@@ -463,6 +455,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155',
     textAlign: 'center',
+    textAlignVertical: 'center',
+    height: 48,
+    includeFontPadding: false,
   },
   customTimeSubmit: {
     backgroundColor: '#3B82F6',

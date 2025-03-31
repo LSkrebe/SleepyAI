@@ -17,11 +17,11 @@ export default function Journal() {
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(50)).current;
-  const slideUpAnim2 = useRef(new Animated.Value(50)).current;
-  const slideUpAnim3 = useRef(new Animated.Value(50)).current;
-  const slideUpAnim4 = useRef(new Animated.Value(50)).current;
-  const slideUpAnim5 = useRef(new Animated.Value(50)).current;
+  const slideUpAnim = useRef(new Animated.Value(100)).current;
+  const slideUpAnim2 = useRef(new Animated.Value(100)).current;
+  const slideUpAnim3 = useRef(new Animated.Value(100)).current;
+  const slideUpAnim4 = useRef(new Animated.Value(100)).current;
+  const slideUpAnim5 = useRef(new Animated.Value(100)).current;
 
   useEffect(() => {
     // Start animations
@@ -31,32 +31,37 @@ export default function Journal() {
         duration: 1000,
         useNativeDriver: true,
       }),
-      Animated.timing(slideUpAnim, {
+      Animated.spring(slideUpAnim, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         useNativeDriver: true,
       }),
-      Animated.timing(slideUpAnim2, {
+      Animated.spring(slideUpAnim2, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         delay: 200,
         useNativeDriver: true,
       }),
-      Animated.timing(slideUpAnim3, {
+      Animated.spring(slideUpAnim3, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         delay: 400,
         useNativeDriver: true,
       }),
-      Animated.timing(slideUpAnim4, {
+      Animated.spring(slideUpAnim4, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         delay: 600,
         useNativeDriver: true,
       }),
-      Animated.timing(slideUpAnim5, {
+      Animated.spring(slideUpAnim5, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 7,
         delay: 800,
         useNativeDriver: true,
       }),
@@ -124,15 +129,24 @@ export default function Journal() {
         </View>
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>7h 32m</Text>
+            <View style={styles.statValueContainer}>
+              <Text style={styles.statValue}>7h 32m</Text>
+              <View style={styles.statValueUnderline} />
+            </View>
             <Text style={styles.statLabel}>Duration</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>87%</Text>
+            <View style={styles.statValueContainer}>
+              <Text style={styles.statValue}>87%</Text>
+              <View style={styles.statValueUnderline} />
+            </View>
             <Text style={styles.statLabel}>Quality</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>4</Text>
+            <View style={styles.statValueContainer}>
+              <Text style={styles.statValue}>4</Text>
+              <View style={styles.statValueUnderline} />
+            </View>
             <Text style={styles.statLabel}>Cycles</Text>
           </View>
         </View>
@@ -288,7 +302,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 30,
+    paddingBottom: 40,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
     position: 'relative',
@@ -343,11 +357,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   card: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginTop: 16,
+    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -387,13 +402,22 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 4,
   },
+  statValueContainer: {
+    alignItems: 'center',
+  },
+  statValueUnderline: {
+    width: 40,
+    height: 1,
+    backgroundColor: '#3B82F6',
+    marginTop: 0,
+    borderRadius: 1,
+  },
   insightText: {
     fontSize: 16,
     color: '#CBD5E1',
     lineHeight: 24,
   },
   alarmCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -435,7 +459,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   chartCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -489,8 +512,8 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    padding: 8,
+    backgroundColor: 'rgba(15, 23, 42, 1)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#334155',
@@ -504,31 +527,32 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   metricIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: 6,
   },
   metricItemTemperature: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderColor: '#EF4444',
   },
   metricItemHumidity: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderColor: '#0EA5E9',
   },
   metricItemNoise: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderColor: '#8B5CF6',
   },
   metricItemLight: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderColor: '#F59E0B',
   },
   metricContent: {
     flex: 1,
+    paddingRight: 2,
   },
   metricValue: {
     fontSize: 16,
@@ -541,7 +565,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   cyclesCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -590,7 +613,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   insightsCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
     padding: 24,
@@ -633,7 +655,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   todayCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#3B82F6',
     padding: 24,
