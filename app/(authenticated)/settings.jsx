@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Modal, TextInput, Dimensions } from 'react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const CustomToggle = ({ value, onValueChange }) => {
   const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -46,13 +48,16 @@ const CustomToggle = ({ value, onValueChange }) => {
 export default function Settings() {
   const [settings, setSettings] = useState({
     sleepDetection: true,
-    environmentalMonitoring: true,
-    smartWake: true,
     sleepReminders: true,
     wakeUpReminders: true,
-    dataCollection: true,
-    analytics: true,
+    presetBedtime: '22:00',
+    presetWakeup: '07:00',
   });
+
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedSetting, setSelectedSetting] = useState(null);
+  const [customHours, setCustomHours] = useState('');
+  const [customMinutes, setCustomMinutes] = useState('');
 
   const { logout } = useAuth();
 
@@ -70,6 +75,29 @@ export default function Settings() {
       ...prev,
       [key]: !prev[key],
     }));
+  };
+
+  const openTimePicker = (setting) => {
+    const time = settings[setting];
+    const [hours, minutes] = time.split(':');
+    setCustomHours(hours);
+    setCustomMinutes(minutes);
+    setSelectedSetting(setting);
+    setShowTimePicker(true);
+  };
+
+  const handleTimeSubmit = () => {
+    const hours = parseInt(customHours);
+    const minutes = parseInt(customMinutes);
+    
+    if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      setSettings(prev => ({
+        ...prev,
+        [selectedSetting]: formattedTime,
+      }));
+      setShowTimePicker(false);
+    }
   };
 
   const renderSection = (title, children) => (
@@ -98,52 +126,61 @@ export default function Settings() {
       </View>
 
       {renderSection('Sleep Tracking', (
+        <View style={styles.settingItem}>
+          <View style={styles.settingItemLeft}>
+            <View style={styles.iconContainer}>
+              <Moon size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.settingItemContent}>
+              <Text style={styles.settingItemTitle}>Sleep Detection</Text>
+              <Text style={styles.settingItemDescription}>Automatically detect when you're sleeping</Text>
+            </View>
+          </View>
+          <CustomToggle 
+            value={settings.sleepDetection} 
+            onValueChange={() => toggleSetting('sleepDetection')} 
+          />
+        </View>
+      ))}
+
+      {renderSection('Preset Times', (
         <>
-          <View style={styles.settingItem}>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => openTimePicker('presetBedtime')}
+          >
             <View style={styles.settingItemLeft}>
               <View style={styles.iconContainer}>
                 <Moon size={20} color="#3B82F6" />
               </View>
               <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Sleep Detection</Text>
-                <Text style={styles.settingItemDescription}>Automatically detect when you're sleeping</Text>
+                <Text style={styles.settingItemTitle}>Preset Bedtime</Text>
+                <Text style={styles.settingItemDescription}>Set your preferred bedtime</Text>
               </View>
             </View>
-            <CustomToggle 
-              value={settings.sleepDetection} 
-              onValueChange={() => toggleSetting('sleepDetection')} 
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Thermometer size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Environmental Monitoring</Text>
-                <Text style={styles.settingItemDescription}>Track room temperature and humidity</Text>
-              </View>
+            <View style={styles.timeContainer}>
+              <Text style={styles.timeText}>{settings.presetBedtime}</Text>
+              <ChevronRight size={20} color="#64748B" />
             </View>
-            <CustomToggle 
-              value={settings.environmentalMonitoring} 
-              onValueChange={() => toggleSetting('environmentalMonitoring')} 
-            />
-          </View>
-          <View style={styles.settingItem}>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => openTimePicker('presetWakeup')}
+          >
             <View style={styles.settingItemLeft}>
               <View style={styles.iconContainer}>
                 <Sun size={20} color="#3B82F6" />
               </View>
               <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Smart Wake</Text>
-                <Text style={styles.settingItemDescription}>Wake up during light sleep phase</Text>
+                <Text style={styles.settingItemTitle}>Preset Wake-up Time</Text>
+                <Text style={styles.settingItemDescription}>Set your preferred wake-up time</Text>
               </View>
             </View>
-            <CustomToggle 
-              value={settings.smartWake} 
-              onValueChange={() => toggleSetting('smartWake')} 
-            />
-          </View>
+            <View style={styles.timeContainer}>
+              <Text style={styles.timeText}>{settings.presetWakeup}</Text>
+              <ChevronRight size={20} color="#64748B" />
+            </View>
+          </TouchableOpacity>
         </>
       ))}
 
@@ -182,41 +219,6 @@ export default function Settings() {
         </>
       ))}
 
-      {renderSection('Privacy & Data', (
-        <>
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Lock size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Data Collection</Text>
-                <Text style={styles.settingItemDescription}>Control what data is collected</Text>
-              </View>
-            </View>
-            <CustomToggle 
-              value={settings.dataCollection} 
-              onValueChange={() => toggleSetting('dataCollection')} 
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Lock size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Analytics</Text>
-                <Text style={styles.settingItemDescription}>Help improve the app</Text>
-              </View>
-            </View>
-            <CustomToggle 
-              value={settings.analytics} 
-              onValueChange={() => toggleSetting('analytics')} 
-            />
-          </View>
-        </>
-      ))}
-
       {renderSection('Account', (
         <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
           <View style={styles.settingItemLeft}>
@@ -231,6 +233,57 @@ export default function Settings() {
           <ChevronRight size={20} color="#EF4444" />
         </TouchableOpacity>
       ))}
+
+      <Modal
+        visible={showTimePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedSetting === 'presetBedtime' ? 'Set Bedtime' : 'Set Wake-up Time'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Text style={styles.modalClose}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.timeInputContainer}>
+              <View style={styles.timeInputWrapper}>
+                <TextInput
+                  style={styles.timeInput}
+                  value={customHours}
+                  onChangeText={setCustomHours}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  placeholder="00"
+                  placeholderTextColor="#64748B"
+                />
+                <Text style={styles.timeSeparator}>:</Text>
+                <TextInput
+                  style={styles.timeInput}
+                  value={customMinutes}
+                  onChangeText={setCustomMinutes}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                  placeholder="00"
+                  placeholderTextColor="#64748B"
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.modalSubmitButton}
+              onPress={handleTimeSubmit}
+            >
+              <Text style={styles.modalSubmitButtonText}>Set Time</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -364,5 +417,79 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
+  },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeText: {
+    color: '#64748B',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 20,
+    width: screenWidth - 32,
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  modalClose: {
+    fontSize: 16,
+    color: '#64748B',
+  },
+  timeInputContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  timeInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeInput: {
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    padding: 12,
+    width: 80,
+    textAlign: 'center',
+    fontSize: 24,
+    color: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  timeSeparator: {
+    fontSize: 24,
+    color: '#E2E8F0',
+    marginHorizontal: 4,
+  },
+  modalSubmitButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalSubmitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

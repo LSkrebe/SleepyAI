@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Activity } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { useAlarm } from '../../context/AlarmContext';
+import { router } from 'expo-router';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32; // Adjusted to match stats page
 
 export default function Journal() {
+  const { alarmTime, isAlarmActive } = useAlarm();
   const [sleepQuality, setSleepQuality] = useState(85);
   const [sleepDuration, setSleepDuration] = useState(7.5);
   const [temperature, setTemperature] = useState(20);
@@ -99,6 +102,27 @@ export default function Journal() {
     },
     paddingLeft: 15,
     paddingRight: 15,
+  };
+
+  const getTimeUntilAlarm = () => {
+    const [hours, minutes] = alarmTime.split(':').map(Number);
+    const now = new Date();
+    const alarmTime = new Date(now);
+    alarmTime.setHours(hours, minutes, 0, 0);
+
+    // If the alarm time is in the past, set it for tomorrow
+    if (alarmTime < now) {
+      alarmTime.setDate(alarmTime.getDate() + 1);
+    }
+
+    const diff = alarmTime - now;
+    const hoursUntil = Math.floor(diff / (1000 * 60 * 60));
+    const minutesUntil = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hoursUntil > 0) {
+      return `${hoursUntil}h ${minutesUntil}m`;
+    }
+    return `${minutesUntil}m`;
   };
 
   return (
@@ -274,17 +298,25 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.alarmCard, { transform: [{ translateY: slideUpAnim5 }] }]}>
         <View style={styles.cardHeader}>
-          <BellRing size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
-        </View>
-        <View style={styles.alarmContainer}>
-          <View style={styles.alarmTimeContainer}>
-            <Text style={styles.alarmTime}>06:30</Text>
-            <Text style={styles.alarmPeriod}>AM</Text>
+          <View style={styles.alarmIconContainer}>
+            <BellRing size={28} color="#3B82F6" />
           </View>
+          <View style={styles.alarmHeaderContent}>
+            <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
+            <TouchableOpacity onPress={() => router.push('/alarm')}>
+              <Text style={styles.alarmEdit}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View style={styles.alarmContent}>
+          <Text style={styles.alarmTime}>{alarmTime}</Text>
           <View style={styles.alarmInfo}>
-            <Text style={styles.alarmLabel}>Tomorrow</Text>
-            <Text style={styles.alarmSubtext}>7 hours from now</Text>
+            <Text style={styles.alarmStatus}>
+              {isAlarmActive ? 'Alarm is set' : 'No alarm set'}
+            </Text>
+            <Text style={styles.timeUntilAlarm}>
+              {isAlarmActive ? `in ${getTimeUntilAlarm()}` : ''}
+            </Text>
           </View>
         </View>
       </Animated.View>
@@ -418,45 +450,61 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   alarmCard: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderWidth: 1,
     borderColor: '#334155',
-    padding: 24,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    overflow: 'hidden',
+  },
+  alarmIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  alarmHeaderContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   alarmTitle: {
-    fontSize: 22,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#E2E8F0',
   },
-  alarmContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 8,
+  alarmEdit: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
-  alarmTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+  alarmContent: {
+    padding: 16,
+    alignItems: 'center',
   },
   alarmTime: {
     fontSize: 48,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#E2E8F0',
-  },
-  alarmPeriod: {
-    fontSize: 24,
-    color: '#94A3B8',
-    marginLeft: 4,
+    marginBottom: 8,
   },
   alarmInfo: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    gap: 4,
   },
-  alarmLabel: {
-    fontSize: 16,
+  alarmStatus: {
+    fontSize: 14,
     color: '#94A3B8',
-    marginBottom: 4,
   },
-  alarmSubtext: {
-    fontSize: 12,
-    color: '#64748B',
+  timeUntilAlarm: {
+    fontSize: 16,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
   chartCard: {
     borderWidth: 1,

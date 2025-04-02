@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput } from 'react-native';
 import { BellRing, Moon, Sun, ChevronDown, X } from 'lucide-react-native';
 import { Audio } from 'expo-av';
+import { useAlarm } from '../../context/AlarmContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function Alarm() {
+  const { alarmTime, setAlarmTime, isAlarmActive, setIsAlarmActive } = useAlarm();
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState('07:30');
   const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
-  const [isAlarmActive, setIsAlarmActive] = useState(false);
   const [showAlarmModal, setShowAlarmModal] = useState(false);
   const [sound, setSound] = useState(null);
   const [snoozeTimeout, setSnoozeTimeout] = useState(null);
@@ -67,7 +67,7 @@ export default function Alarm() {
   };
 
   const handleTimeSelection = (time) => {
-    setSelectedTime(time);
+    setAlarmTime(time);
     setShowTimePicker(false);
   };
 
@@ -77,7 +77,7 @@ export default function Alarm() {
     
     if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
       const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      setSelectedTime(formattedTime);
+      setAlarmTime(formattedTime);
       setShowTimePicker(false);
     }
   };
@@ -88,7 +88,7 @@ export default function Alarm() {
       clearTimeout(alarmTimeout);
     }
 
-    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const [hours, minutes] = alarmTime.split(':').map(Number);
     const now = new Date();
     const alarmTime = new Date(now);
     alarmTime.setHours(hours, minutes, 0, 0);
@@ -175,7 +175,7 @@ export default function Alarm() {
   };
 
   const openTimePicker = () => {
-    const [hours, minutes] = selectedTime.split(':');
+    const [hours, minutes] = alarmTime.split(':');
     setCustomHours(hours);
     setCustomMinutes(minutes);
     setShowTimePicker(true);
@@ -216,7 +216,7 @@ export default function Alarm() {
               <Text style={[
                 styles.timeDisplay,
                 isAlarmActive && styles.timeDisplayDisabled
-              ]}>{selectedTime}</Text>
+              ]}>{alarmTime}</Text>
               <Text style={[
                 styles.selectedDaysText,
                 isAlarmActive && styles.selectedDaysTextDisabled
@@ -374,7 +374,7 @@ export default function Alarm() {
               <Text style={styles.alarmModalTitle}>Time to Wake Up!</Text>
             </View>
             <View style={styles.alarmModalTimeContainer}>
-              <Text style={styles.alarmModalTime}>{selectedTime}</Text>
+              <Text style={styles.alarmModalTime}>{alarmTime}</Text>
             </View>
             <View style={styles.alarmModalButtons}>
               <TouchableOpacity
