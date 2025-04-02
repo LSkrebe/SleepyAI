@@ -5,8 +5,11 @@ import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
 import * as Battery from 'expo-battery';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+const SETTINGS_STORAGE_KEY = '@sleepyai_settings';
 
 const CustomToggle = ({ value, onValueChange }) => {
   const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -63,10 +66,61 @@ export default function Settings() {
 
   const { logout } = useAuth();
 
+  // Load settings when component mounts
   useEffect(() => {
-    // Set initial sleep window
-    sleepTrackingService.setSleepWindow(settings.presetBedtime, settings.presetWakeup);
+    loadSettings();
+  }, []);
 
+  // Save settings whenever they change
+  useEffect(() => {
+    saveSettings();
+  }, [settings]);
+
+  // Load settings from AsyncStorage
+  const loadSettings = async () => {
+    try {
+      const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
+        
+        // Update sleep tracking service with saved times
+        sleepTrackingService.setSleepWindow(parsedSettings.presetBedtime, parsedSettings.presetWakeup);
+        
+        // Start tracking if sleep detection was enabled and current time is within window
+        if (parsedSettings.sleepDetection) {
+          const now = new Date();
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const [bedHours, bedMinutes] = parsedSettings.presetBedtime.split(':').map(Number);
+          const [wakeHours, wakeMinutes] = parsedSettings.presetWakeup.split(':').map(Number);
+          
+          const bedTimeInMinutes = bedHours * 60 + bedMinutes;
+          const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+
+          const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
+            ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
+            : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
+
+          if (isWithinWindow) {
+            sleepTrackingService.startTracking();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
+
+  // Save settings to AsyncStorage
+  const saveSettings = async () => {
+    try {
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  useEffect(() => {
     // Set up battery monitoring
     const setupBatteryMonitoring = async () => {
       // Get initial battery state
