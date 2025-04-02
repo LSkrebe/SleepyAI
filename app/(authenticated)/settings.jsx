@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Modal, TextInput, Dimensions } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock } from 'lucide-react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
+import sleepTrackingService from '../../services/sleepTrackingService';
+import * as Battery from 'expo-battery';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -61,6 +63,29 @@ export default function Settings() {
 
   const { logout } = useAuth();
 
+  useEffect(() => {
+    // Set initial sleep window
+    sleepTrackingService.setSleepWindow(settings.presetBedtime, settings.presetWakeup);
+
+    // Set up battery monitoring
+    const setupBatteryMonitoring = async () => {
+      // Get initial battery state
+      const batteryState = await Battery.getBatteryStateAsync();
+      sleepTrackingService.setPhoneCharging(batteryState === Battery.BatteryState.CHARGING);
+
+      // Subscribe to battery state changes
+      const subscription = Battery.addBatteryStateListener(({ batteryState }) => {
+        sleepTrackingService.setPhoneCharging(batteryState === Battery.BatteryState.CHARGING);
+      });
+
+      return () => {
+        subscription.remove();
+      };
+    };
+
+    setupBatteryMonitoring();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -71,10 +96,22 @@ export default function Settings() {
   };
 
   const toggleSetting = (key) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setSettings(prev => {
+      const newSettings = {
+        ...prev,
+        [key]: !prev[key],
+      };
+
+      if (key === 'sleepDetection') {
+        if (newSettings.sleepDetection) {
+          sleepTrackingService.startTracking();
+        } else {
+          sleepTrackingService.stopTracking();
+        }
+      }
+
+      return newSettings;
+    });
   };
 
   const openTimePicker = (setting) => {
@@ -92,10 +129,44 @@ export default function Settings() {
     
     if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
       const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      setSettings(prev => ({
-        ...prev,
-        [selectedSetting]: formattedTime,
-      }));
+      setSettings(prev => {
+        const newSettings = {
+          ...prev,
+          [selectedSetting]: formattedTime,
+        };
+
+        // Update sleep tracking service with new times
+        if (selectedSetting === 'presetBedtime' || selectedSetting === 'presetWakeup') {
+          const newBedTime = selectedSetting === 'presetBedtime' ? formattedTime : newSettings.presetBedtime;
+          const newWakeTime = selectedSetting === 'presetWakeup' ? formattedTime : newSettings.presetWakeup;
+          
+          sleepTrackingService.setSleepWindow(newBedTime, newWakeTime);
+
+          // Check if we need to start tracking based on the new sleep window
+          if (newSettings.sleepDetection) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const [bedHours, bedMinutes] = newBedTime.split(':').map(Number);
+            const [wakeHours, wakeMinutes] = newWakeTime.split(':').map(Number);
+            
+            const bedTimeInMinutes = bedHours * 60 + bedMinutes;
+            const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+
+            // Handle case where sleep window crosses midnight
+            const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
+              ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
+              : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
+
+            if (isWithinWindow) {
+              sleepTrackingService.startTracking();
+            } else {
+              sleepTrackingService.stopTracking();
+            }
+          }
+        }
+
+        return newSettings;
+      });
       setShowTimePicker(false);
     }
   };
