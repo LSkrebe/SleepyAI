@@ -9,7 +9,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const SETTINGS_STORAGE_KEY = '@sleepyai_settings';
+// Get settings storage key based on user ID
+const getSettingsStorageKey = (userId) => `@sleepyai_settings_${userId}`;
 
 const CustomToggle = ({ value, onValueChange }) => {
   const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -64,22 +65,27 @@ export default function Settings() {
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
 
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   // Load settings when component mounts
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (user) {
+      loadSettings();
+    }
+  }, [user]);
 
   // Save settings whenever they change
   useEffect(() => {
-    saveSettings();
-  }, [settings]);
+    if (user) {
+      saveSettings();
+    }
+  }, [settings, user]);
 
   // Load settings from AsyncStorage
   const loadSettings = async () => {
     try {
-      const savedSettings = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      const storageKey = getSettingsStorageKey(user.uid);
+      const savedSettings = await AsyncStorage.getItem(storageKey);
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings(parsedSettings);
@@ -114,7 +120,8 @@ export default function Settings() {
   // Save settings to AsyncStorage
   const saveSettings = async () => {
     try {
-      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+      const storageKey = getSettingsStorageKey(user.uid);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(settings));
     } catch (error) {
       console.error('Error saving settings:', error);
     }
