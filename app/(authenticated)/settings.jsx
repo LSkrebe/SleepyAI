@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Modal, TextInput, Dimensions } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock } from 'lucide-react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock, ChevronDown } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
@@ -9,8 +9,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+const DAYS = [
+  { id: 'monday', label: 'Monday' },
+  { id: 'tuesday', label: 'Tuesday' },
+  { id: 'wednesday', label: 'Wednesday' },
+  { id: 'thursday', label: 'Thursday' },
+  { id: 'friday', label: 'Friday' },
+  { id: 'saturday', label: 'Saturday' },
+  { id: 'sunday', label: 'Sunday' },
+];
+
 // Get settings storage key based on user ID
 const getSettingsStorageKey = (userId) => `@sleepyai_settings_${userId}`;
+
+const DEFAULT_SETTINGS = {
+  sleepDetection: true,
+  sleepReminders: true,
+  wakeUpReminders: true,
+  days: DAYS.reduce((acc, day) => ({
+    ...acc,
+    [day.id]: {
+      bedtime: '22:00',
+      wakeup: '07:00',
+      enabled: true
+    }
+  }), {})
+};
 
 const CustomToggle = ({ value, onValueChange }) => {
   const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
@@ -52,18 +76,14 @@ const CustomToggle = ({ value, onValueChange }) => {
 };
 
 export default function Settings() {
-  const [settings, setSettings] = useState({
-    sleepDetection: true,
-    sleepReminders: true,
-    wakeUpReminders: true,
-    presetBedtime: '22:00',
-    presetWakeup: '07:00',
-  });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(null);
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
+  const [expandedDays, setExpandedDays] = useState({});
 
   const { logout, user } = useAuth();
 
@@ -86,34 +106,64 @@ export default function Settings() {
     try {
       const storageKey = getSettingsStorageKey(user.uid);
       const savedSettings = await AsyncStorage.getItem(storageKey);
+      
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
-        setSettings(parsedSettings);
         
-        // Update sleep tracking service with saved times
-        sleepTrackingService.setSleepWindow(parsedSettings.presetBedtime, parsedSettings.presetWakeup);
+        // Validate and merge with default settings
+        const validatedSettings = {
+          ...DEFAULT_SETTINGS,
+          ...parsedSettings,
+          days: {
+            ...DEFAULT_SETTINGS.days,
+            ...(parsedSettings.days || {})
+          }
+        };
         
-        // Start tracking if sleep detection was enabled and current time is within window
-        if (parsedSettings.sleepDetection) {
-          const now = new Date();
-          const currentTime = now.getHours() * 60 + now.getMinutes();
-          const [bedHours, bedMinutes] = parsedSettings.presetBedtime.split(':').map(Number);
-          const [wakeHours, wakeMinutes] = parsedSettings.presetWakeup.split(':').map(Number);
+        setSettings(validatedSettings);
+        
+        // Update sleep tracking service with current day's times
+        const today = new Date().getDay();
+        // Convert Sunday (0) to 6, Monday (1) to 0, etc.
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        const daySettings = validatedSettings.days[currentDay.id];
+        
+        if (daySettings) {
+          console.log(`Loading sleep window for ${currentDay.label} (Day ${today}) - Bed: ${daySettings.bedtime}, Wake: ${daySettings.wakeup}`);
+          // Set the enabled state for the current day
+          sleepTrackingService.setCurrentDayEnabled(daySettings.enabled);
           
-          const bedTimeInMinutes = bedHours * 60 + bedMinutes;
-          const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+          if (daySettings.enabled) {
+            sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
+            
+            // Start tracking if sleep detection was enabled and current time is within window
+            if (validatedSettings.sleepDetection) {
+              const now = new Date();
+              const currentTime = now.getHours() * 60 + now.getMinutes();
+              const [bedHours, bedMinutes] = daySettings.bedtime.split(':').map(Number);
+              const [wakeHours, wakeMinutes] = daySettings.wakeup.split(':').map(Number);
+              
+              const bedTimeInMinutes = bedHours * 60 + bedMinutes;
+              const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
 
-          const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
-            ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
-            : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
+              const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
+                ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
+                : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
 
-          if (isWithinWindow) {
-            sleepTrackingService.startTracking();
+              if (isWithinWindow) {
+                sleepTrackingService.startTracking();
+              } else {
+                sleepTrackingService.stopTracking();
+              }
+            }
           }
         }
       }
     } catch (error) {
       console.error('Error loading settings:', error);
+      // If there's an error, use default settings
+      setSettings(DEFAULT_SETTINGS);
     }
   };
 
@@ -164,6 +214,7 @@ export default function Settings() {
       };
 
       if (key === 'sleepDetection') {
+        console.log(`Sleep detection ${newSettings.sleepDetection ? 'enabled' : 'disabled'}`);
         if (newSettings.sleepDetection) {
           sleepTrackingService.startTracking();
         } else {
@@ -175,11 +226,69 @@ export default function Settings() {
     });
   };
 
-  const openTimePicker = (setting) => {
-    const time = settings[setting];
+  const toggleDayExpanded = (dayId) => {
+    setExpandedDays(prev => ({
+      ...prev,
+      [dayId]: !prev[dayId]
+    }));
+  };
+
+  const toggleDayEnabled = (dayId) => {
+    setSettings(prev => {
+      const newSettings = {
+        ...prev,
+        days: {
+          ...prev.days,
+          [dayId]: {
+            ...prev.days[dayId],
+            enabled: !prev.days[dayId].enabled
+          }
+        }
+      };
+
+      // If this is the current day, update the sleep tracking service immediately
+      const today = new Date().getDay();
+      const adjustedDay = today === 0 ? 6 : today - 1;
+      const currentDay = DAYS[adjustedDay];
+      
+      if (dayId === currentDay.id) {
+        const daySettings = newSettings.days[dayId];
+        console.log(`Tracking ${daySettings.enabled ? 'enabled' : 'disabled'} for ${currentDay.label}`);
+        sleepTrackingService.setCurrentDayEnabled(daySettings.enabled);
+        
+        if (daySettings.enabled && newSettings.sleepDetection) {
+          const now = new Date();
+          const currentTime = now.getHours() * 60 + now.getMinutes();
+          const [bedHours, bedMinutes] = daySettings.bedtime.split(':').map(Number);
+          const [wakeHours, wakeMinutes] = daySettings.wakeup.split(':').map(Number);
+          
+          const bedTimeInMinutes = bedHours * 60 + bedMinutes;
+          const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+
+          const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
+            ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
+            : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
+
+          if (isWithinWindow) {
+            sleepTrackingService.startTracking();
+          } else {
+            sleepTrackingService.stopTracking();
+          }
+        } else {
+          sleepTrackingService.stopTracking();
+        }
+      }
+
+      return newSettings;
+    });
+  };
+
+  const openTimePicker = (dayId, setting) => {
+    const time = settings.days[dayId][setting];
     const [hours, minutes] = time.split(':');
     setCustomHours(hours);
     setCustomMinutes(minutes);
+    setSelectedDay(dayId);
     setSelectedSetting(setting);
     setShowTimePicker(true);
   };
@@ -193,27 +302,34 @@ export default function Settings() {
       setSettings(prev => {
         const newSettings = {
           ...prev,
-          [selectedSetting]: formattedTime,
+          days: {
+            ...prev.days,
+            [selectedDay]: {
+              ...prev.days[selectedDay],
+              [selectedSetting]: formattedTime,
+            }
+          }
         };
 
-        // Update sleep tracking service with new times
-        if (selectedSetting === 'presetBedtime' || selectedSetting === 'presetWakeup') {
-          const newBedTime = selectedSetting === 'presetBedtime' ? formattedTime : newSettings.presetBedtime;
-          const newWakeTime = selectedSetting === 'presetWakeup' ? formattedTime : newSettings.presetWakeup;
-          
-          sleepTrackingService.setSleepWindow(newBedTime, newWakeTime);
+        // Update sleep tracking service with new times if it's the current day
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        
+        if (selectedDay === currentDay.id) {
+          const daySettings = newSettings.days[selectedDay];
+          sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
 
-          // Check if we need to start tracking based on the new sleep window
-          if (newSettings.sleepDetection) {
+          // If the day is enabled and sleep detection is on, check if we should start/stop tracking
+          if (daySettings.enabled && newSettings.sleepDetection) {
             const now = new Date();
             const currentTime = now.getHours() * 60 + now.getMinutes();
-            const [bedHours, bedMinutes] = newBedTime.split(':').map(Number);
-            const [wakeHours, wakeMinutes] = newWakeTime.split(':').map(Number);
+            const [bedHours, bedMinutes] = daySettings.bedtime.split(':').map(Number);
+            const [wakeHours, wakeMinutes] = daySettings.wakeup.split(':').map(Number);
             
             const bedTimeInMinutes = bedHours * 60 + bedMinutes;
             const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
 
-            // Handle case where sleep window crosses midnight
             const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
               ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
               : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
@@ -230,6 +346,80 @@ export default function Settings() {
       });
       setShowTimePicker(false);
     }
+  };
+
+  const renderDaySettings = (day) => {
+    const isExpanded = expandedDays[day.id];
+    const daySettings = settings.days[day.id];
+    const today = new Date().getDay();
+    const isCurrentDay = DAYS[today].id === day.id;
+
+    return (
+      <View key={day.id} style={styles.dayContainer}>
+        <TouchableOpacity 
+          style={styles.dayHeader}
+          onPress={() => toggleDayExpanded(day.id)}
+        >
+          <View style={styles.dayHeaderLeft}>
+            <View style={styles.iconContainer}>
+              <Clock size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.dayHeaderContent}>
+              <Text style={styles.dayTitle}>{day.label}</Text>
+              <Text style={styles.daySubtitle}>
+                {daySettings.enabled ? 'Enabled' : 'Disabled'}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.dayHeaderRight}>
+            <CustomToggle 
+              value={daySettings.enabled} 
+              onValueChange={() => toggleDayEnabled(day.id)} 
+            />
+            <ChevronDown 
+              size={20} 
+              color="#64748B" 
+              style={[
+                styles.chevronIcon,
+                isExpanded && styles.chevronIconExpanded
+              ]} 
+            />
+          </View>
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={styles.dayContent}>
+            <TouchableOpacity 
+              style={styles.timeSetting}
+              onPress={() => openTimePicker(day.id, 'bedtime')}
+            >
+              <View style={styles.timeSettingLeft}>
+                <Moon size={20} color="#3B82F6" />
+                <Text style={styles.timeSettingLabel}>Bedtime</Text>
+              </View>
+              <View style={styles.timeContainer}>
+                <Text style={styles.timeText}>{daySettings.bedtime}</Text>
+                <ChevronRight size={20} color="#64748B" />
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.timeSetting}
+              onPress={() => openTimePicker(day.id, 'wakeup')}
+            >
+              <View style={styles.timeSettingLeft}>
+                <Sun size={20} color="#3B82F6" />
+                <Text style={styles.timeSettingLabel}>Wake-up Time</Text>
+              </View>
+              <View style={styles.timeContainer}>
+                <Text style={styles.timeText}>{daySettings.wakeup}</Text>
+                <ChevronRight size={20} color="#64748B" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
   };
 
   const renderSection = (title, children) => (
@@ -275,45 +465,8 @@ export default function Settings() {
         </View>
       ))}
 
-      {renderSection('Preset Times', (
-        <>
-          <TouchableOpacity 
-            style={styles.settingItem}
-            onPress={() => openTimePicker('presetBedtime')}
-          >
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Moon size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Preset Bedtime</Text>
-                <Text style={styles.settingItemDescription}>Set your preferred bedtime</Text>
-              </View>
-            </View>
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{settings.presetBedtime}</Text>
-              <ChevronRight size={20} color="#64748B" />
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.settingItem}
-            onPress={() => openTimePicker('presetWakeup')}
-          >
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Sun size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Preset Wake-up Time</Text>
-                <Text style={styles.settingItemDescription}>Set your preferred wake-up time</Text>
-              </View>
-            </View>
-            <View style={styles.timeContainer}>
-              <Text style={styles.timeText}>{settings.presetWakeup}</Text>
-              <ChevronRight size={20} color="#64748B" />
-            </View>
-          </TouchableOpacity>
-        </>
+      {renderSection('Daily Schedule', (
+        DAYS.map(renderDaySettings)
       ))}
 
       {renderSection('Notifications', (
@@ -376,7 +529,7 @@ export default function Settings() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {selectedSetting === 'presetBedtime' ? 'Set Bedtime' : 'Set Wake-up Time'}
+                {selectedSetting === 'bedtime' ? 'Set Bedtime' : 'Set Wake-up Time'}
               </Text>
               <TouchableOpacity onPress={() => setShowTimePicker(false)}>
                 <Text style={styles.modalClose}>Cancel</Text>
@@ -623,5 +776,67 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  dayContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#334155',
+  },
+  dayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  dayHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dayHeaderContent: {
+    marginLeft: 12,
+  },
+  dayTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#E2E8F0',
+  },
+  daySubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  dayHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  chevronIcon: {
+    transform: [{ rotate: '0deg' }],
+  },
+  chevronIconExpanded: {
+    transform: [{ rotate: '180deg' }],
+  },
+  dayContent: {
+    padding: 16,
+    paddingTop: 0,
+  },
+  timeSetting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  timeSettingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  timeSettingLabel: {
+    fontSize: 16,
+    color: '#E2E8F0',
   },
 }); 
