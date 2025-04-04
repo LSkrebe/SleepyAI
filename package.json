@@ -43,6 +43,7 @@
     "expo-task-manager": "~12.0.5",
     "expo-web-browser": "~14.0.2",
     "firebase": "^11.5.0",
+    "groq": "^3.82.0",
     "lucide-react-native": "^0.344.0",
     "openai": "^4.91.1",
     "react": "18.3.1",

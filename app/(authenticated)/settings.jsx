@@ -216,7 +216,31 @@ export default function Settings() {
       if (key === 'sleepDetection') {
         console.log(`Sleep detection ${newSettings.sleepDetection ? 'enabled' : 'disabled'}`);
         if (newSettings.sleepDetection) {
-          sleepTrackingService.startTracking();
+          // Check if we should start tracking based on current time and settings
+          const today = new Date().getDay();
+          const adjustedDay = today === 0 ? 6 : today - 1;
+          const currentDay = DAYS[adjustedDay];
+          const daySettings = newSettings.days[currentDay.id];
+          
+          if (daySettings.enabled) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const [bedHours, bedMinutes] = daySettings.bedtime.split(':').map(Number);
+            const [wakeHours, wakeMinutes] = daySettings.wakeup.split(':').map(Number);
+            
+            const bedTimeInMinutes = bedHours * 60 + bedMinutes;
+            const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+
+            const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
+              ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
+              : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
+
+            if (isWithinWindow) {
+              sleepTrackingService.startTracking();
+            } else {
+              sleepTrackingService.stopTracking();
+            }
+          }
         } else {
           sleepTrackingService.stopTracking();
         }
@@ -256,6 +280,7 @@ export default function Settings() {
         console.log(`Tracking ${daySettings.enabled ? 'enabled' : 'disabled'} for ${currentDay.label}`);
         sleepTrackingService.setCurrentDayEnabled(daySettings.enabled);
         
+        // Check if we should start/stop tracking based on current time and settings
         if (daySettings.enabled && newSettings.sleepDetection) {
           const now = new Date();
           const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -320,7 +345,7 @@ export default function Settings() {
           const daySettings = newSettings.days[selectedDay];
           sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
 
-          // If the day is enabled and sleep detection is on, check if we should start/stop tracking
+          // Check if we should start/stop tracking based on current time and settings
           if (daySettings.enabled && newSettings.sleepDetection) {
             const now = new Date();
             const currentTime = now.getHours() * 60 + now.getMinutes();

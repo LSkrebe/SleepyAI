@@ -1,6 +1,5 @@
 import { Accelerometer, Gyroscope } from 'expo-sensors';
-import { OPENAI_API_KEY } from '@env';
-import OpenAI from 'openai';
+import { GROQ_API_KEY } from '@env';
 
 class SleepTrackingService {
   constructor() {
@@ -15,16 +14,30 @@ class SleepTrackingService {
     this.lastGyroData = null;
     this.currentDayEnabled = true;
     this.sleepData = []; // Array to store sleep data for the current window
+    this.windowCheckInterval = null;
 
-    // Initialize OpenAI client only if API key is available
-    if (OPENAI_API_KEY) {
-      this.openai = new OpenAI({
-        apiKey: OPENAI_API_KEY,
-        dangerouslyAllowBrowser: true
-      });
-    } else {
-      console.warn('OpenAI API key not found. Sleep analysis will be disabled.');
-      this.openai = null;
+    // Start periodic check for sleep window
+    this.startWindowCheck();
+  }
+
+  startWindowCheck() {
+    // Check every minute if we should start/stop tracking
+    this.windowCheckInterval = setInterval(() => {
+      if (this.currentDayEnabled) {
+        const isWithin = this.isWithinSleepWindow();
+        if (isWithin && !this.isTracking) {
+          this.startTracking();
+        } else if (!isWithin && this.isTracking) {
+          this.stopTracking();
+        }
+      }
+    }, 60000); // Check every minute
+  }
+
+  stopWindowCheck() {
+    if (this.windowCheckInterval) {
+      clearInterval(this.windowCheckInterval);
+      this.windowCheckInterval = null;
     }
   }
 
@@ -44,31 +57,35 @@ class SleepTrackingService {
   }
 
   isWithinSleepWindow() {
-    if (!this.currentDayEnabled) {
-      return false;
-    }
-
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
-    
     const [bedHours, bedMinutes] = this.bedTime.split(':').map(Number);
     const [wakeHours, wakeMinutes] = this.wakeTime.split(':').map(Number);
     
     const bedTimeInMinutes = bedHours * 60 + bedMinutes;
     const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
 
-    const isWithinWindow = bedTimeInMinutes > wakeTimeInMinutes
-      ? currentTime >= bedTimeInMinutes || currentTime <= wakeTimeInMinutes
-      : currentTime >= bedTimeInMinutes && currentTime <= wakeTimeInMinutes;
-
-    // If we just left the sleep window, analyze the collected data
-    if (!isWithinWindow && this.sleepData.length > 0) {
-      console.log('Sleep window ended, analyzing data');
-      this.analyzeSleepData();
-      this.sleepData = [];
+    // If bedtime is after wake time (e.g., 22:00 to 07:00)
+    if (bedTimeInMinutes > wakeTimeInMinutes) {
+      // Check if current time is exactly wake time
+      if (currentTime === wakeTimeInMinutes) {
+        // If we're at wake time, stop tracking
+        this.stopTracking();
+        return false;
+      }
+      // Otherwise, check if we're within the overnight window
+      return currentTime >= bedTimeInMinutes || currentTime < wakeTimeInMinutes;
+    } else {
+      // For same-day windows (e.g., 22:00 to 23:00)
+      // Check if current time is exactly wake time
+      if (currentTime === wakeTimeInMinutes) {
+        // If we're at wake time, stop tracking
+        this.stopTracking();
+        return false;
+      }
+      // Otherwise, check if we're within the window
+      return currentTime >= bedTimeInMinutes && currentTime < wakeTimeInMinutes;
     }
-
-    return isWithinWindow;
   }
 
   formatSensorData(data, isGyroscope = false) {
@@ -82,7 +99,7 @@ class SleepTrackingService {
 
   logSleepData(accelerometerData, gyroscopeData) {
     const now = new Date();
-    const time = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     const accel = this.formatSensorData(accelerometerData);
     const gyro = this.formatSensorData(gyroscopeData, true);
     
@@ -150,6 +167,13 @@ class SleepTrackingService {
     this.lastGyroData = null;
     this.isTracking = false;
     console.log('Sleep tracking stopped');
+
+    // Analyze collected data if we have any
+    if (this.sleepData.length > 0) {
+      console.log('Analyzing collected sleep data');
+      this.analyzeSleepData();
+      this.sleepData = []; // Reset data after analysis
+    }
   }
 
   setPhoneCharging(isCharging) {
@@ -162,69 +186,81 @@ class SleepTrackingService {
 
   async analyzeSleepData() {
     if (this.sleepData.length === 0) return;
-    if (!this.openai) {
-      console.log('OpenAI client not initialized. Skipping sleep analysis.');
+    if (!GROQ_API_KEY) {
+      console.log('Groq API key not found. Skipping sleep analysis.');
       return null;
     }
 
     try {
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{
-          role: "system",
-          content: `You are a sleep analysis expert. This is a TEST with only a few minutes of sleep tracking data, not a full night's sleep.
-          
-          Analyze the following sleep data and provide sleep quality scores (0-100) for each 30-minute interval.
-          
-          Rules:
-          1. Only output scores in the format: 'HH:MM:SCORE'
-          2. Score 0-100 based on:
-             - Movement (accelerometer/gyroscope data)
-             - Phone charging state
-             - Phone usage state
-             - Environmental factors
-          3. Higher scores mean better sleep quality
-          4. One score per line
-          5. No explanations or additional text
-          6. Since this is a test with limited data, provide scores for the time periods where we have data`
-        }, {
-          role: "user",
-          content: JSON.stringify(this.sleepData)
-        }],
-        temperature: 0.3,
-        max_tokens: 500
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          messages: [{
+            role: "system",
+            content: `You are a sleep analysis expert. This is a TEST with only a few minutes of sleep tracking data, not a full night's sleep.
+            
+            Analyze the following sleep data and provide a JSON response with:
+            1. Sleep quality scores (0-100) for each 10-second interval
+            2. A recommendation for the sleep window if needed
+            
+            Rules for sleep quality scores:
+            1. Score 0-100 based on:
+               - Movement (accelerometer/gyroscope data)
+               - Phone charging state
+               - Phone usage state
+               - Environmental factors
+            2. Higher scores mean better sleep quality
+            3. Since this is a test with limited data, provide scores for each 10-second interval where we have data
+            
+            Rules for sleep window recommendation:
+            1. Only recommend changes if you see clear patterns in the data
+            2. Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
+            
+            Output format:
+            {
+              "scores": {
+                "HH:MM:SS": score,
+                ...
+              },
+              "recommendation": {
+                "bedtime": "HH:MM",
+                "waketime": "HH:MM"
+              } or null
+            }`
+          }, {
+            role: "user",
+            content: JSON.stringify(this.sleepData)
+          }],
+          temperature: 0.3,
+          max_tokens: 500,
+          stream: false
+        })
       });
 
-      const analysis = completion.choices[0].message.content;
+      const data = await response.json();
+      const analysis = JSON.parse(data.choices[0].message.content);
       
-      // Log raw API response
-      console.log('Raw API Response:', analysis);
+      // Log sleep window status
+      if (analysis.recommendation) {
+        const { bedtime, waketime } = analysis.recommendation;
+        console.log(`Sleep window updated to ${bedtime}-${waketime}`);
+        this.setSleepWindow(bedtime, waketime);
+      } else {
+        console.log(`Sleep window remains ${this.bedTime}-${this.wakeTime}`);
+      }
       
-      // Process the analysis into 30-minute intervals
-      const scores = this.processSleepScores(analysis);
-      console.log('Processed Sleep Quality Scores:', scores);
-      
-      return scores;
+      // Log sleep quality scores
+      console.log('Sleep Quality Scores:', analysis.scores);
+      return analysis.scores;
     } catch (error) {
       console.error('Error analyzing sleep data:', error);
       return null;
     }
-  }
-
-  processSleepScores(analysis) {
-    // Split the analysis into lines and parse each score
-    const lines = analysis.split('\n');
-    const scores = {};
-    
-    lines.forEach(line => {
-      const match = line.match(/(\d{2}:\d{2}):(\d+)/);
-      if (match) {
-        const [_, time, score] = match;
-        scores[time] = parseInt(score);
-      }
-    });
-    
-    return scores;
   }
 }
 
