@@ -33,7 +33,8 @@ const DEFAULT_SETTINGS = {
       wakeup: '07:00',
       enabled: true
     }
-  }), {})
+  }), {}),
+  recommendations: {}
 };
 
 const CustomToggle = ({ value, onValueChange }) => {
@@ -77,13 +78,15 @@ const CustomToggle = ({ value, onValueChange }) => {
 
 export default function Settings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-
+  const [recommendations, setRecommendations] = useState({});
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
   const [expandedDays, setExpandedDays] = useState({});
+  const [bedTime, setBedTime] = useState('22:00');
+  const [wakeTime, setWakeTime] = useState('07:00');
 
   const { logout, user } = useAuth();
 
@@ -117,14 +120,16 @@ export default function Settings() {
           days: {
             ...DEFAULT_SETTINGS.days,
             ...(parsedSettings.days || {})
-          }
+          },
+          recommendations: parsedSettings.recommendations || {}
         };
         
         setSettings(validatedSettings);
+        // Set recommendations from saved settings
+        setRecommendations(validatedSettings.recommendations);
         
         // Update sleep tracking service with current day's times
         const today = new Date().getDay();
-        // Convert Sunday (0) to 6, Monday (1) to 0, etc.
         const adjustedDay = today === 0 ? 6 : today - 1;
         const currentDay = DAYS[adjustedDay];
         const daySettings = validatedSettings.days[currentDay.id];
@@ -196,6 +201,49 @@ export default function Settings() {
 
     setupBatteryMonitoring();
   }, []);
+
+  useEffect(() => {
+    // Listen for sleep window updates from the service
+    const handleSleepWindowUpdate = ({ bedTime, wakeTime, recommendedBedTime, recommendedWakeTime, currentDay }) => {
+      // Update current display times
+      setBedTime(bedTime);
+      setWakeTime(wakeTime);
+
+      // Store recommendations for the next occurrence of this day
+      if (recommendedBedTime && recommendedWakeTime) {
+        const newRecommendations = {
+          ...recommendations,
+          [DAYS[currentDay].id]: {
+            bedtime: recommendedBedTime,
+            wakeup: recommendedWakeTime
+          }
+        };
+        
+        setRecommendations(newRecommendations);
+
+        // Update settings with new recommendations
+        setSettings(prev => ({
+          ...prev,
+          recommendations: newRecommendations,
+          days: {
+            ...prev.days,
+            [DAYS[currentDay].id]: {
+              ...prev.days[DAYS[currentDay].id],
+              bedtime: recommendedBedTime,
+              wakeup: recommendedWakeTime
+            }
+          }
+        }));
+      }
+    };
+
+    sleepTrackingService.onSleepWindowUpdate(handleSleepWindowUpdate);
+
+    return () => {
+      // Cleanup listener when component unmounts
+      sleepTrackingService.offSleepWindowUpdate(handleSleepWindowUpdate);
+    };
+  }, [recommendations]);
 
   const handleLogout = async () => {
     try {
@@ -376,8 +424,19 @@ export default function Settings() {
   const renderDaySettings = (day) => {
     const isExpanded = expandedDays[day.id];
     const daySettings = settings.days[day.id];
+    
+    // Get current day
     const today = new Date().getDay();
-    const isCurrentDay = DAYS[today].id === day.id;
+    const adjustedDay = today === 0 ? 6 : today - 1;
+    const currentDay = DAYS[adjustedDay];
+    const isCurrentDay = day.id === currentDay.id;
+
+    // Use the updated times from the service for the current day
+    const displayBedTime = isCurrentDay ? bedTime : daySettings.bedtime;
+    const displayWakeTime = isCurrentDay ? wakeTime : daySettings.wakeup;
+
+    // Check if there are recommendations for this day
+    const hasRecommendation = recommendations[day.id];
 
     return (
       <View key={day.id} style={styles.dayContainer}>
@@ -386,24 +445,26 @@ export default function Settings() {
           onPress={() => toggleDayExpanded(day.id)}
         >
           <View style={styles.dayHeaderLeft}>
-            <View style={styles.iconContainer}>
-              <Clock size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.dayHeaderContent}>
-              <Text style={styles.dayTitle}>{day.label}</Text>
-              <Text style={styles.daySubtitle}>
-                {daySettings.enabled ? 'Enabled' : 'Disabled'}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.dayHeaderRight}>
             <CustomToggle 
               value={daySettings.enabled} 
               onValueChange={() => toggleDayEnabled(day.id)} 
             />
+            <View style={styles.dayHeaderContent}>
+              <Text style={styles.dayTitle}>{day.label}</Text>
+              <Text style={styles.daySubtitle}>
+                {daySettings.enabled ? `${displayBedTime} - ${displayWakeTime}` : 'Disabled'}
+              </Text>
+              {hasRecommendation && (
+                <Text style={[styles.daySubtitle, { color: '#3B82F6' }]}>
+                  Recommended: {hasRecommendation.bedtime} - {hasRecommendation.wakeup}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.dayHeaderRight}>
             <ChevronDown 
               size={20} 
-              color="#64748B" 
+              color="#64748B"
               style={[
                 styles.chevronIcon,
                 isExpanded && styles.chevronIconExpanded
@@ -423,7 +484,7 @@ export default function Settings() {
                 <Text style={styles.timeSettingLabel}>Bedtime</Text>
               </View>
               <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{daySettings.bedtime}</Text>
+                <Text style={styles.timeText}>{displayBedTime}</Text>
                 <ChevronRight size={20} color="#64748B" />
               </View>
             </TouchableOpacity>
@@ -437,7 +498,7 @@ export default function Settings() {
                 <Text style={styles.timeSettingLabel}>Wake-up Time</Text>
               </View>
               <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{daySettings.wakeup}</Text>
+                <Text style={styles.timeText}>{displayWakeTime}</Text>
                 <ChevronRight size={20} color="#64748B" />
               </View>
             </TouchableOpacity>

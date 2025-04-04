@@ -4,6 +4,7 @@ import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Acti
 import { LineChart } from 'react-native-chart-kit';
 import { useAlarm } from '../../context/AlarmContext';
 import { router } from 'expo-router';
+import sleepTrackingService from '../../services/sleepTrackingService';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32; // Adjusted to match stats page
@@ -17,6 +18,12 @@ export default function Journal() {
   const [noise, setNoise] = useState(30);
   const [light, setLight] = useState(0);
   const [sleepCycles, setSleepCycles] = useState(4);
+  const [sleepQualityData, setSleepQualityData] = useState({
+    labels: ['22', '23', '0', '1', '2', '3', '4', '5', '6', '7'],
+    datasets: [{
+      data: [30, 65, 85, 90, 95, 92, 88, 85, 80, 75],
+    }],
+  });
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -69,14 +76,35 @@ export default function Journal() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
 
-  const sleepQualityData = {
-    labels: ['22', '23', '0', '1', '2', '3', '4', '5', '6', '7'],
-    datasets: [{
-      data: [30, 65, 85, 90, 95, 92, 88, 85, 80, 75],
-    }],
-  };
+    // Listen for sleep quality updates
+    const handleSleepQualityUpdate = (scores) => {
+      // Convert scores object to arrays for the chart
+      const times = Object.keys(scores);
+      const values = Object.values(scores);
+
+      // Format times to show only hours and minutes
+      const labels = times.map(time => time.split(':').slice(0, 2).join(':'));
+
+      // Update chart data
+      setSleepQualityData({
+        labels,
+        datasets: [{
+          data: values,
+        }],
+      });
+
+      // Update overall sleep quality (average of all scores)
+      const avgQuality = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      setSleepQuality(avgQuality);
+    };
+
+    sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
+
+    return () => {
+      sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
+    };
+  }, []);
 
   const chartConfig = {
     backgroundColor: '#0F172A',

@@ -1,5 +1,6 @@
 import { Accelerometer, Gyroscope } from 'expo-sensors';
 import { GROQ_API_KEY } from '@env';
+import { EventEmitter } from 'events';
 
 class SleepTrackingService {
   constructor() {
@@ -15,6 +16,7 @@ class SleepTrackingService {
     this.currentDayEnabled = true;
     this.sleepData = []; // Array to store sleep data for the current window
     this.windowCheckInterval = null;
+    this.eventEmitter = new EventEmitter();
 
     // Start periodic check for sleep window
     this.startWindowCheck();
@@ -46,6 +48,8 @@ class SleepTrackingService {
     this.wakeTime = wakeTime;
     // Reset sleep data when window changes
     this.sleepData = [];
+    // Emit event for sleep window update
+    this.eventEmitter.emit('sleepWindowUpdate', { bedTime, wakeTime });
   }
 
   setCurrentDayEnabled(enabled) {
@@ -170,7 +174,6 @@ class SleepTrackingService {
 
     // Analyze collected data if we have any
     if (this.sleepData.length > 0) {
-      console.log('Analyzing collected sleep data');
       this.analyzeSleepData();
       this.sleepData = []; // Reset data after analysis
     }
@@ -187,7 +190,6 @@ class SleepTrackingService {
   async analyzeSleepData() {
     if (this.sleepData.length === 0) return;
     if (!GROQ_API_KEY) {
-      console.log('Groq API key not found. Skipping sleep analysis.');
       return null;
     }
 
@@ -203,35 +205,32 @@ class SleepTrackingService {
           messages: [{
             role: "system",
             content: `You are a sleep analysis expert. This is a TEST with only a few minutes of sleep tracking data, not a full night's sleep.
-            
-            Analyze the following sleep data and provide a JSON response with:
-            1. Sleep quality scores (0-100) for each 10-second interval
-            2. A recommendation for the sleep window if needed
-            
-            Rules for sleep quality scores:
-            1. Score 0-100 based on:
-               - Movement (accelerometer/gyroscope data)
-               - Phone charging state
-               - Phone usage state
-               - Environmental factors
-            2. Higher scores mean better sleep quality
-            3. Since this is a test with limited data, provide scores for each 10-second interval where we have data
-            
-            Rules for sleep window recommendation:
-            1. Only recommend changes if you see clear patterns in the data
-            2. Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
-            
-            Output format:
-            {
-              "scores": {
-                "HH:MM:SS": score,
-                ...
-              },
-              "recommendation": {
-                "bedtime": "HH:MM",
-                "waketime": "HH:MM"
-              } or null
-            }`
+
+IMPORTANT: Return ONLY raw JSON without any markdown formatting, code blocks, or extra characters.
+DO NOT include \`\`\`json or \`\`\` markers.
+DO NOT add any text before or after the JSON.
+DO NOT add any whitespace before or after the JSON.
+The response must be a single, valid JSON object.
+
+Analyze the following sleep data and provide:
+1. Sleep quality scores (0-100) for each 10-second interval
+2. A recommendation for the sleep window if needed
+
+Rules for sleep quality scores:
+- Score 0-100 based on:
+  * Movement (accelerometer/gyroscope data)
+  * Phone charging state
+  * Phone usage state
+  * Environmental factors
+- Higher scores mean better sleep quality
+- Since this is a test with limited data, provide scores for each 10-second interval where we have data
+
+Rules for sleep window recommendation:
+- Only recommend changes if you see clear patterns in the data
+- Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
+
+Expected format (exactly like this, no extra characters):
+{"scores":{"HH:MM:SS":85,"HH:MM:SS":90},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"}}`
           }, {
             role: "user",
             content: JSON.stringify(this.sleepData)
@@ -243,24 +242,65 @@ class SleepTrackingService {
       });
 
       const data = await response.json();
-      const analysis = JSON.parse(data.choices[0].message.content);
-      
-      // Log sleep window status
-      if (analysis.recommendation) {
-        const { bedtime, waketime } = analysis.recommendation;
-        console.log(`Sleep window updated to ${bedtime}-${waketime}`);
-        this.setSleepWindow(bedtime, waketime);
-      } else {
-        console.log(`Sleep window remains ${this.bedTime}-${this.wakeTime}`);
+      console.log('Raw API Response:', data.choices[0].message.content);
+
+      let analysis;
+      try {
+        analysis = JSON.parse(data.choices[0].message.content.trim());
+      } catch (parseError) {
+        console.error('Failed to parse API response:', parseError);
+        console.log('Response content:', data.choices[0].message.content);
+        return null;
       }
       
-      // Log sleep quality scores
-      console.log('Sleep Quality Scores:', analysis.scores);
+      // Validate the response structure
+      if (!analysis.scores || typeof analysis.scores !== 'object') {
+        return null;
+      }
+      
+      // Store the recommendation for the next occurrence of this day
+      // but don't update the current tracking session
+      if (analysis.recommendation) {
+        const { bedtime, waketime } = analysis.recommendation;
+        // Emit event with both current and recommended times
+        this.eventEmitter.emit('sleepWindowUpdate', {
+          bedTime: this.bedTime,
+          wakeTime: this.wakeTime,
+          recommendedBedTime: bedtime,
+          recommendedWakeTime: waketime,
+          currentDay: this.getCurrentDay()
+        });
+      }
+      
+      // Emit event with sleep quality scores
+      this.eventEmitter.emit('sleepQualityUpdate', analysis.scores);
       return analysis.scores;
     } catch (error) {
       console.error('Error analyzing sleep data:', error);
       return null;
     }
+  }
+
+  getCurrentDay() {
+    const today = new Date().getDay();
+    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
+    return today === 0 ? 6 : today - 1;
+  }
+
+  onSleepQualityUpdate(callback) {
+    this.eventEmitter.on('sleepQualityUpdate', callback);
+  }
+
+  offSleepQualityUpdate(callback) {
+    this.eventEmitter.off('sleepQualityUpdate', callback);
+  }
+
+  onSleepWindowUpdate(callback) {
+    this.eventEmitter.on('sleepWindowUpdate', callback);
+  }
+
+  offSleepWindowUpdate(callback) {
+    this.eventEmitter.off('sleepWindowUpdate', callback);
   }
 }
 
