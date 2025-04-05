@@ -215,6 +215,7 @@ The response must be a single, valid JSON object.
 Analyze the following sleep data and provide:
 1. Sleep quality scores (0-100)
 2. A recommendation for the sleep window if needed
+3. Sleep insights based on the data (2-3 short, actionable insights)
 
 Rules for sleep quality scores:
 - Score 0-100 based on:
@@ -229,8 +230,14 @@ Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
+Rules for sleep insights:
+- Provide 2-3 short, actionable insights based on the data
+- Focus on patterns in movement, charging, phone usage, and environmental factors
+- Keep insights concise and specific
+- Make insights actionable with clear suggestions
+
 Expected format (exactly like this, no extra characters):
-{"scores":{"HH:MM:SS":85,"HH:MM:SS":90},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"}}`
+{"scores":{"HH:MM:SS":85,"HH:MM:SS":90},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
           }, {
             role: "user",
             content: JSON.stringify(this.sleepData)
@@ -272,8 +279,12 @@ Expected format (exactly like this, no extra characters):
         });
       }
       
-      // Emit event with sleep quality scores
-      this.eventEmitter.emit('sleepQualityUpdate', analysis.scores);
+      // Emit event with sleep quality scores and insights
+      this.eventEmitter.emit('sleepQualityUpdate', {
+        scores: analysis.scores,
+        insights: analysis.insights || [],
+        environmental: this.sleepData.map(data => data.environmental)
+      });
       return analysis.scores;
     } catch (error) {
       console.error('Error analyzing sleep data:', error);

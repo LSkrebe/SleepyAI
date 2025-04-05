@@ -87,6 +87,8 @@ export default function Settings() {
   const [expandedDays, setExpandedDays] = useState({});
   const [bedTime, setBedTime] = useState('22:00');
   const [wakeTime, setWakeTime] = useState('07:00');
+  const [recommendedBedTime, setRecommendedBedTime] = useState(null);
+  const [recommendedWakeTime, setRecommendedWakeTime] = useState(null);
 
   const { logout, user } = useAuth();
 
@@ -210,31 +212,35 @@ export default function Settings() {
       setWakeTime(wakeTime);
 
       // Only store recommendations if they differ from current times
-      if (recommendedBedTime && recommendedWakeTime && 
-          (recommendedBedTime !== bedTime || recommendedWakeTime !== wakeTime)) {
-        const newRecommendations = {
-          ...recommendations,
-          [DAYS[currentDay].id]: {
-            bedtime: recommendedBedTime,
-            wakeup: recommendedWakeTime
-          }
-        };
+      if (recommendedBedTime && recommendedWakeTime) {
+        const daySettings = settings.days[DAYS[currentDay].id];
         
-        setRecommendations(newRecommendations);
-
-        // Update settings with new recommendations
-        setSettings(prev => ({
-          ...prev,
-          recommendations: newRecommendations,
-          days: {
-            ...prev.days,
+        // Check if recommendations match current times
+        if (recommendedBedTime === daySettings.bedtime && recommendedWakeTime === daySettings.wakeup) {
+          // Clear recommendations for this day
+          setRecommendations(prev => {
+            const newRecommendations = { ...prev };
+            delete newRecommendations[DAYS[currentDay].id];
+            return newRecommendations;
+          });
+        } else {
+          // Store recommendations if they differ
+          const newRecommendations = {
+            ...recommendations,
             [DAYS[currentDay].id]: {
-              ...prev.days[DAYS[currentDay].id],
               bedtime: recommendedBedTime,
               wakeup: recommendedWakeTime
             }
-          }
-        }));
+          };
+          
+          setRecommendations(newRecommendations);
+
+          // Update settings with new recommendations
+          setSettings(prev => ({
+            ...prev,
+            recommendations: newRecommendations
+          }));
+        }
       }
     };
 
@@ -244,7 +250,38 @@ export default function Settings() {
       // Cleanup listener when component unmounts
       sleepTrackingService.offSleepWindowUpdate(handleSleepWindowUpdate);
     };
-  }, [recommendations]);
+  }, [recommendations, settings.days]);
+
+  const handleSleepQualityUpdate = (data) => {
+    if (data.recommendation) {
+      const { bedtime, waketime } = data.recommendation;
+      
+      // Get current day's settings
+      const today = new Date().getDay();
+      const adjustedDay = today === 0 ? 6 : today - 1;
+      const currentDay = DAYS[adjustedDay];
+      const daySettings = settings.days[currentDay.id];
+      
+      // Check if recommendations match current times
+      if (bedtime === daySettings.bedtime && waketime === daySettings.wakeup) {
+        // Clear recommendations for this day
+        setRecommendations(prev => {
+          const newRecommendations = { ...prev };
+          delete newRecommendations[currentDay.id];
+          return newRecommendations;
+        });
+      } else {
+        // Store recommendations if they differ
+        setRecommendations(prev => ({
+          ...prev,
+          [currentDay.id]: {
+            bedtime,
+            wakeup: waketime
+          }
+        }));
+      }
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -375,21 +412,15 @@ export default function Settings() {
       const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       setSettings(prev => {
         const newSettings = {
-          ...prev,
+        ...prev,
           days: {
             ...prev.days,
             [selectedDay]: {
               ...prev.days[selectedDay],
-              [selectedSetting]: formattedTime,
+        [selectedSetting]: formattedTime,
             }
           }
         };
-
-        // Remove recommendation for this day since user manually changed the time
-        if (newSettings.recommendations && newSettings.recommendations[selectedDay]) {
-          const { [selectedDay]: removed, ...remainingRecommendations } = newSettings.recommendations;
-          newSettings.recommendations = remainingRecommendations;
-        }
 
         // Update sleep tracking service with new times if it's the current day
         const today = new Date().getDay();
@@ -424,13 +455,6 @@ export default function Settings() {
 
         return newSettings;
       });
-
-      // Also update the recommendations state to remove this day's recommendation
-      setRecommendations(prev => {
-        const { [selectedDay]: removed, ...remaining } = prev;
-        return remaining;
-      });
-
       setShowTimePicker(false);
     }
   };

@@ -5,6 +5,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useAlarm } from '../../context/AlarmContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32; // Adjusted to match stats page
@@ -12,7 +13,7 @@ const chartWidth = screenWidth - 32; // Adjusted to match stats page
 export default function Journal() {
   const { alarmTime, isAlarmActive } = useAlarm();
   const [sleepQuality, setSleepQuality] = useState(85);
-  const [sleepDuration, setSleepDuration] = useState(7.5);
+  const [sleepDuration, setSleepDuration] = useState('7h 30m');
   const [temperature, setTemperature] = useState(20);
   const [humidity, setHumidity] = useState(45);
   const [noise, setNoise] = useState(30);
@@ -24,6 +25,12 @@ export default function Journal() {
       data: [30, 65, 85, 90, 95, 92, 88, 85, 80, 75],
     }],
   });
+  const [sleepInsights, setSleepInsights] = useState([
+    "Maintain a consistent sleep schedule by going to bed and waking up at the same time every day, even on weekends",
+    "Keep your bedroom temperature between 18-22°C and ensure it's completely dark for optimal sleep conditions",
+    "Avoid using electronic devices at least 1 hour before bedtime as blue light can disrupt your natural sleep cycle"
+  ]);
+  const [sleepData, setSleepData] = useState([]);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -78,25 +85,75 @@ export default function Journal() {
     ]).start();
 
     // Listen for sleep quality updates
-    const handleSleepQualityUpdate = (scores) => {
+    const handleSleepQualityUpdate = (data) => {
       // Convert scores object to arrays for the chart
-      const times = Object.keys(scores);
-      const values = Object.values(scores);
-
-      // Format times to show only hours and minutes
-      const labels = times.map(time => time.split(':').slice(0, 2).join(':'));
+      const times = Object.keys(data.scores);
+      const scores = Object.values(data.scores);
+      
+      // Format time labels to show only hours
+      const labels = times.map(time => {
+        const [hours] = time.split(':');
+        return hours;
+      });
 
       // Update chart data
       setSleepQualityData({
         labels,
         datasets: [{
-          data: values,
+          data: scores,
         }],
       });
 
-      // Update overall sleep quality (average of all scores)
-      const avgQuality = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-      setSleepQuality(avgQuality);
+      // Calculate average sleep quality
+      const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+      setSleepQuality(Math.round(averageScore));
+
+      // Update sleep duration (assuming 10-second intervals)
+      const durationInMinutes = (scores.length * 10) / 60;
+      const hours = Math.floor(durationInMinutes / 60);
+      const minutes = Math.round(durationInMinutes % 60);
+      const formattedDuration = `${hours}h ${minutes}m`;
+      setSleepDuration(formattedDuration);
+
+      // Update sleep cycles (assuming 90-minute cycles)
+      const cycles = Math.round(durationInMinutes / 90);
+      setSleepCycles(cycles);
+
+      // Update environment metrics based on average values
+      if (data.environmental && data.environmental.length > 0) {
+        const total = data.environmental.reduce((acc, curr) => ({
+          temperature: acc.temperature + Number(curr.temperature),
+          humidity: acc.humidity + Number(curr.humidity),
+          noise: acc.noise + Number(curr.noise),
+          light: acc.light + Number(curr.light)
+        }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
+
+        const count = data.environmental.length;
+        setTemperature(Math.round(total.temperature / count));
+        setHumidity(Math.round(total.humidity / count));
+        setNoise(Math.round(total.noise / count));
+        setLight(Math.round(total.light / count));
+      }
+
+      // Update insights if available
+      if (data.insights && data.insights.length > 0) {
+        setSleepInsights(data.insights);
+      }
+
+      // Update Today's Sleep card with actual tracking data
+      const today = new Date().toISOString().split('T')[0];
+      const updatedSleepData = sleepData.map(entry => {
+        if (entry.date === today) {
+          return {
+            ...entry,
+            duration: formattedDuration,
+            quality: Math.round(averageScore),
+            isTracked: true
+          };
+        }
+        return entry;
+      });
+      setSleepData(updatedSleepData);
     };
 
     sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
@@ -182,21 +239,21 @@ export default function Journal() {
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>7h 32m</Text>
+              <Text style={styles.statValue}>{sleepDuration}</Text>
               <View style={styles.statValueUnderline} />
             </View>
             <Text style={styles.statLabel}>Duration</Text>
           </View>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>87%</Text>
+              <Text style={styles.statValue}>{sleepQuality}%</Text>
               <View style={styles.statValueUnderline} />
             </View>
             <Text style={styles.statLabel}>Quality</Text>
           </View>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>4</Text>
+              <Text style={styles.statValue}>{sleepCycles}</Text>
               <View style={styles.statValueUnderline} />
             </View>
             <Text style={styles.statLabel}>Cycles</Text>
@@ -290,37 +347,35 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.insightsCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
         <View style={styles.cardHeader}>
-          <Brain size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
+          <View style={styles.insightsIconContainer}>
+            <Brain size={28} color="#3B82F6" />
+          </View>
+          <View style={styles.insightsHeaderContent}>
+            <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
+            <Text style={styles.insightsSubtitle}>Personalized recommendations</Text>
+          </View>
         </View>
         <View style={styles.insightsContainer}>
-          <View style={styles.insightItem}>
-            <View style={styles.insightIconContainer}>
-              <Activity size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Quality Improvement</Text>
-              <Text style={styles.insightText}>Your sleep quality has improved by 5% compared to last week</Text>
-            </View>
-          </View>
-          <View style={styles.insightItem}>
-            <View style={styles.insightIconContainer}>
-              <Timer size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Optimal Duration</Text>
-              <Text style={styles.insightText}>You're getting the recommended 7-9 hours of sleep</Text>
-            </View>
-          </View>
-          <View style={styles.insightItem}>
-            <View style={styles.insightIconContainer}>
-              <Moon size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.insightContent}>
-              <Text style={styles.insightTitle}>Deep Sleep</Text>
-              <Text style={styles.insightText}>You achieved 2.5 hours of deep sleep, which is optimal</Text>
-            </View>
-          </View>
+          {sleepInsights.length > 0 ? (
+            sleepInsights.map((insight, index) => (
+              <View key={index} style={styles.insightItem}>
+                <View style={styles.insightIconContainer}>
+                  {index === 0 ? (
+                    <Timer size={20} color="#3B82F6" />
+                  ) : index === 1 ? (
+                    <Thermometer size={20} color="#3B82F6" />
+                  ) : (
+                    <Sun size={20} color="#3B82F6" />
+                  )}
+                </View>
+                <View style={styles.insightContent}>
+                  <Text style={styles.insightText}>{insight}</Text>
+                </View>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No insights available yet</Text>
+          )}
         </View>
       </Animated.View>
 
@@ -472,10 +527,36 @@ const styles = StyleSheet.create({
     marginTop: 0,
     borderRadius: 1,
   },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  insightIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  insightContent: {
+    flex: 1,
+    paddingTop: 4,
+  },
   insightText: {
-    fontSize: 16,
-    color: '#CBD5E1',
-    lineHeight: 24,
+    fontSize: 14,
+    color: '#E2E8F0',
+    lineHeight: 20,
   },
   alarmCard: {
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
@@ -690,45 +771,39 @@ const styles = StyleSheet.create({
   },
   insightsCard: {
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: '#3B82F6',
     padding: 24,
+  },
+  insightsIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightsHeaderContent: {
+    marginLeft: 12,
+    flex: 1,
   },
   insightsTitle: {
     fontSize: 22,
     color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  insightsSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginLeft: 8,
   },
   insightsContainer: {
+    marginTop: 16,
     gap: 16,
   },
-  insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  insightIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  insightContent: {
-    flex: 1,
-  },
-  insightTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#E2E8F0',
-    marginBottom: 4,
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    fontStyle: 'italic',
   },
   todayCard: {
     borderWidth: 1,
