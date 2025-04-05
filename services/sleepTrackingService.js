@@ -213,7 +213,7 @@ DO NOT add any whitespace before or after the JSON.
 The response must be a single, valid JSON object.
 
 Analyze the following sleep data and provide:
-1. Sleep quality scores (0-100) for each 10-second interval
+1. Sleep quality scores (0-100)
 2. A recommendation for the sleep window if needed
 
 Rules for sleep quality scores:
@@ -223,7 +223,7 @@ Rules for sleep quality scores:
   * Phone usage state
   * Environmental factors
 - Higher scores mean better sleep quality
-- Since this is a test with limited data, provide scores for each 10-second interval where we have data
+- Since this is a test with limited data, provide a maximum of 12 data points
 
 Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
