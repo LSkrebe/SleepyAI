@@ -88,7 +88,8 @@ export default function Journal() {
     const handleSleepQualityUpdate = (data) => {
       // Convert scores object to arrays for the chart
       const times = Object.keys(data.scores);
-      const scores = Object.values(data.scores);
+      const scores = Object.values(data.scores).map(item => item.score);
+      const stages = Object.values(data.scores).map(item => item.stage);
       
       // Format time labels to show only hours
       const labels = times.map(time => {
@@ -115,9 +116,10 @@ export default function Journal() {
       const formattedDuration = `${hours}h ${minutes}m`;
       setSleepDuration(formattedDuration);
 
-      // Update sleep cycles (assuming 90-minute cycles)
-      const cycles = Math.round(durationInMinutes / 90);
-      setSleepCycles(cycles);
+      // Update sleep cycles from the service calculation
+      if (data.cycles !== undefined) {
+        setSleepCycles(data.cycles);
+      }
 
       // Update environment metrics based on average values
       if (data.environmental && data.environmental.length > 0) {
@@ -148,6 +150,7 @@ export default function Journal() {
             ...entry,
             duration: formattedDuration,
             quality: Math.round(averageScore),
+            cycles: data.cycles || 0,
             isTracked: true
           };
         }
@@ -332,7 +335,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.cyclesTitle]}>Sleep Cycles</Text>
-            <Text style={styles.insightsSubtitle}>Based on 90-minute cycles</Text>
+            <Text style={styles.insightsSubtitle}>Based on sleep stage transitions</Text>
           </View>
           <View style={styles.todayIconContainer}>
             <Timer size={28} color="#3B82F6" />
@@ -349,8 +352,8 @@ export default function Journal() {
           <View style={styles.cycleDivider} />
           <View style={styles.cycleItem}>
             <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>1.5</Text>
-              <Text style={styles.cycleUnit}>hours</Text>
+              <Text style={styles.cycleValue}>{sleepCycles > 0 ? Math.round(sleepDuration.split('h')[0] * 60 + parseInt(sleepDuration.split('h')[1]) / sleepCycles) : 0}</Text>
+              <Text style={styles.cycleUnit}>min</Text>
             </View>
             <Text style={styles.cycleLabel}>Avg Duration</Text>
           </View>

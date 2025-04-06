@@ -114,10 +114,10 @@ class SleepTrackingService {
       charging: this.isPhoneCharging,
       state: this.phoneState,
       environmental: {
-        noise: 'M',
-        light: 'M',
-        temperature: 'M',
-        humidity: 'M'
+        noise: 'NaN',
+        light: 'NaN',
+        temperature: 'NaN',
+        humidity: 'NaN'
       }
     };
 
@@ -207,37 +207,39 @@ class SleepTrackingService {
             content: `You are a sleep analysis expert. This is a TEST with only a few minutes of sleep tracking data, not a full night's sleep.
 
 IMPORTANT: Return ONLY raw JSON without any markdown formatting, code blocks, or extra characters.
-DO NOT include \`\`\`json or \`\`\` markers.
-DO NOT add any text before or after the JSON.
-DO NOT add any whitespace before or after the JSON.
-The response must be a single, valid JSON object.
+
 
 Analyze the following sleep data and provide:
-1. Sleep quality scores (0-100)
+1. Sleep stage scores (0-100) mapped to sleep stages:
+   - 0: Awake
+   - 1-25: Light Sleep (N1)
+   - 26-50: Light Sleep (N2)
+   - 51-75: Deep Sleep (N3)
+   - 76-100: REM Sleep
 2. A recommendation for the sleep window if needed
-3. Sleep insights based on the data (2-3 short, actionable insights)
+3. Sleep insights based on the data (2-3 normal length, actionable insights)
 
-Rules for sleep quality scores:
-- Score 0-100 based on:
-  * Movement (accelerometer/gyroscope data)
+Rules for sleep stage scoring:
+- Score based on:
+  * Movement patterns (accelerometer/gyroscope data)
   * Phone charging state
   * Phone usage state
   * Environmental factors
-- Higher scores mean better sleep quality
 - Since this is a test with limited data, provide a maximum of 12 data points
+- Each score should be mapped to the appropriate sleep stage
 
 Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
 Rules for sleep insights:
-- Provide 2-3 short, actionable insights based on the data
+- Provide 2-3 normal length, actionable insights based on the data
 - Focus on patterns in movement, charging, phone usage, and environmental factors
 - Keep insights concise and specific
 - Make insights actionable with clear suggestions
 
 Expected format (exactly like this, no extra characters):
-{"scores":{"HH:MM:SS":85,"HH:MM:SS":90},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
+{"scores":{"HH:MM:SS":{"score":85,"stage":"REM"},"HH:MM:SS":{"score":45,"stage":"N2"}},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
           }, {
             role: "user",
             content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
@@ -256,7 +258,13 @@ ${this.sleepData.map(point =>
 
       let analysis;
       try {
-        analysis = JSON.parse(data.choices[0].message.content.trim());
+        // Clean up the response content by removing any extra characters
+        const cleanedContent = data.choices[0].message.content
+          .trim()
+          .replace(/^```json\s*/, '')
+          .replace(/\s*```$/, '');
+        
+        analysis = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('Failed to parse API response:', parseError);
         console.log('Response content:', data.choices[0].message.content);
@@ -265,6 +273,7 @@ ${this.sleepData.map(point =>
       
       // Validate the response structure
       if (!analysis.scores || typeof analysis.scores !== 'object') {
+        console.error('Invalid response structure:', analysis);
         return null;
       }
       
@@ -286,13 +295,42 @@ ${this.sleepData.map(point =>
       this.eventEmitter.emit('sleepQualityUpdate', {
         scores: analysis.scores,
         insights: analysis.insights || [],
-        environmental: this.sleepData.map(data => data.environmental)
+        environmental: this.sleepData.map(data => data.environmental),
+        cycles: this.calculateSleepCycles(analysis.scores)
       });
       return analysis.scores;
     } catch (error) {
       console.error('Error analyzing sleep data:', error);
       return null;
     }
+  }
+
+  calculateSleepCycles(scores) {
+    if (!scores || Object.keys(scores).length === 0) return 0;
+    
+    // Convert scores to array of stages
+    const stages = Object.values(scores).map(item => item.stage);
+    
+    // Count transitions between different sleep stages
+    let cycleCount = 0;
+    let lastStage = null;
+    
+    for (const stage of stages) {
+      if (lastStage !== null && stage !== lastStage) {
+        // Count a cycle when we transition from REM back to N1/N2
+        if (lastStage === 'REM' && (stage === 'N1' || stage === 'N2')) {
+          cycleCount++;
+        }
+      }
+      lastStage = stage;
+    }
+    
+    // If we have any REM sleep, add at least one cycle
+    if (stages.includes('REM') && cycleCount === 0) {
+      cycleCount = 1;
+    }
+    
+    return cycleCount;
   }
 
   getCurrentDay() {
