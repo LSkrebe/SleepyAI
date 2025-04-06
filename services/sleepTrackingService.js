@@ -11,7 +11,7 @@ class SleepTrackingService {
     this.bedTime = '22:00'; // Default bed time
     this.wakeTime = '07:00'; // Default wake time
     this.isPhoneCharging = false;
-    this.isPhoneInUse = false;
+    this.phoneState = 'idle'; // Possible states: 'idle', 'active', 'locked', 'screen_off'
     this.lastGyroData = null;
     this.currentDayEnabled = true;
     this.sleepData = []; // Array to store sleep data for the current window
@@ -112,7 +112,7 @@ class SleepTrackingService {
       accelerometer: accel,
       gyroscope: gyro,
       charging: this.isPhoneCharging,
-      state: this.isPhoneInUse ? 'A' : 'I',
+      state: this.phoneState,
       environmental: {
         noise: 'M',
         light: 'M',
@@ -125,7 +125,7 @@ class SleepTrackingService {
     this.sleepData.push(dataPoint);
     
     // Log the current data point
-    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.isPhoneInUse ? 'A' : 'I'} N=M L=M T=M H=M`);
+    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=M L=M T=M H=M`);
   }
 
   startTracking() {
@@ -184,7 +184,7 @@ class SleepTrackingService {
   }
 
   setPhoneInUse(isInUse) {
-    this.isPhoneInUse = isInUse;
+    this.phoneState = isInUse ? 'active' : 'idle';
   }
 
   async analyzeSleepData() {
@@ -240,7 +240,10 @@ Expected format (exactly like this, no extra characters):
 {"scores":{"HH:MM:SS":85,"HH:MM:SS":90},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
           }, {
             role: "user",
-            content: JSON.stringify(this.sleepData)
+            content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
+${this.sleepData.map(point => 
+  `${point.time},${point.accelerometer.x},${point.accelerometer.y},${point.accelerometer.z},${point.gyroscope.x},${point.gyroscope.y},${point.gyroscope.z},${point.charging},${point.state},${point.environmental.noise},${point.environmental.light},${point.environmental.temperature},${point.environmental.humidity}`
+).join('\n')}`
           }],
           temperature: 0.3,
           max_tokens: 500,

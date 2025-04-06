@@ -228,12 +228,14 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }] }]}>
         <View style={styles.cardHeader}>
+          <View style={styles.todayHeaderContent}>
+            <View style={styles.todayTitleContainer}>
+              <Text style={[styles.cardTitle, styles.todayTitle]}>Today's Sleep</Text>
+              <Text style={styles.todayDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+            </View>
+          </View>
           <View style={styles.todayIconContainer}>
             <Moon size={28} color="#3B82F6" />
-          </View>
-          <View style={styles.todayHeaderContent}>
-            <Text style={[styles.cardTitle, styles.todayTitle]}>Today's Sleep</Text>
-            <Text style={styles.todayDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
           </View>
         </View>
         <View style={styles.sleepStats}>
@@ -263,8 +265,13 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.chartCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
         <View style={styles.cardHeader}>
-          <Activity size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
+          <View style={styles.insightsHeaderContent}>
+            <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
+            <Text style={styles.insightsSubtitle}>Last 24 hours</Text>
+          </View>
+          <View style={styles.todayIconContainer}>
+            <Activity size={28} color="#3B82F6" />
+          </View>
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -323,8 +330,13 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.cyclesCard, { transform: [{ translateY: slideUpAnim3 }] }]}>
         <View style={styles.cardHeader}>
-          <Timer size={28} color="#3B82F6" />
-          <Text style={[styles.cardTitle, styles.cyclesTitle]}>Today's Sleep Cycles</Text>
+          <View style={styles.insightsHeaderContent}>
+            <Text style={[styles.cardTitle, styles.cyclesTitle]}>Sleep Cycles</Text>
+            <Text style={styles.insightsSubtitle}>Based on 90-minute cycles</Text>
+          </View>
+          <View style={styles.todayIconContainer}>
+            <Timer size={28} color="#3B82F6" />
+          </View>
         </View>
         <View style={styles.cyclesContainer}>
           <View style={styles.cycleItem}>
@@ -347,12 +359,12 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.insightsCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
         <View style={styles.cardHeader}>
-          <View style={styles.insightsIconContainer}>
-            <Brain size={28} color="#3B82F6" />
-          </View>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
             <Text style={styles.insightsSubtitle}>Personalized recommendations</Text>
+          </View>
+          <View style={styles.todayIconContainer}>
+            <Brain size={28} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.insightsContainer}>
@@ -381,26 +393,38 @@ export default function Journal() {
 
       <Animated.View style={[styles.card, styles.alarmCard, { transform: [{ translateY: slideUpAnim5 }] }]}>
         <View style={styles.cardHeader}>
-          <View style={styles.alarmIconContainer}>
-            <BellRing size={28} color="#3B82F6" />
-          </View>
-          <View style={styles.alarmHeaderContent}>
+          <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
-            <TouchableOpacity onPress={() => router.push('/alarm')}>
-              <Text style={styles.alarmEdit}>Edit</Text>
-            </TouchableOpacity>
+            <Text style={styles.insightsSubtitle}>Set your wake-up time</Text>
+          </View>
+          <View style={styles.todayIconContainer}>
+            <BellRing size={28} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.alarmContent}>
-          <Text style={styles.alarmTime}>{alarmTime}</Text>
-          <View style={styles.alarmInfo}>
-            <Text style={styles.alarmStatus}>
-              {isAlarmActive ? 'Alarm is set' : 'No alarm set'}
-            </Text>
-            <Text style={styles.timeUntilAlarm}>
-              {isAlarmActive ? `in ${getTimeUntilAlarm()}` : ''}
-            </Text>
+          <View style={styles.alarmTimeContainer}>
+            <Text style={styles.alarmTime}>{alarmTime}</Text>
+            <View style={styles.alarmStatusContainer}>
+              <View style={[styles.alarmStatusDot, { backgroundColor: isAlarmActive ? '#3B82F6' : '#94A3B8' }]} />
+              <Text style={styles.alarmStatus}>
+                {isAlarmActive ? 'Alarm is set' : 'No alarm set'}
+              </Text>
+            </View>
           </View>
+          {isAlarmActive && (
+            <View style={styles.alarmCountdown}>
+              <Text style={styles.timeUntilAlarm}>
+                {getTimeUntilAlarm()}
+              </Text>
+              <Text style={styles.countdownLabel}>until alarm</Text>
+            </View>
+          )}
+          <TouchableOpacity 
+            style={styles.alarmEditButton}
+            onPress={() => router.push('/alarm')}
+          >
+            <Text style={styles.alarmEditText}>Edit Alarm</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
     </ScrollView>
@@ -583,9 +607,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   alarmTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
     color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
   },
   alarmEdit: {
     fontSize: 14,
@@ -596,24 +621,46 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
+  alarmTimeContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   alarmTime: {
     fontSize: 48,
     fontWeight: '700',
     color: '#E2E8F0',
     marginBottom: 8,
   },
-  alarmInfo: {
+  alarmStatusContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
+  },
+  alarmStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   alarmStatus: {
     fontSize: 14,
     color: '#94A3B8',
   },
+  alarmCountdown: {
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 8,
+    width: '100%',
+  },
   timeUntilAlarm: {
-    fontSize: 16,
+    fontSize: 24,
+    fontWeight: '600',
     color: '#3B82F6',
-    fontWeight: '500',
+  },
+  countdownLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
   },
   chartCard: {
     borderWidth: 1,
@@ -623,6 +670,8 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 22,
     color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
   },
   chartContainer: {
     marginVertical: 8,
@@ -729,6 +778,8 @@ const styles = StyleSheet.create({
   cyclesTitle: {
     fontSize: 22,
     color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
   },
   cyclesContainer: {
     flexDirection: 'row',
@@ -774,27 +825,21 @@ const styles = StyleSheet.create({
     borderColor: '#3B82F6',
     padding: 24,
   },
-  insightsIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   insightsHeaderContent: {
-    marginLeft: 12,
     flex: 1,
+    marginLeft: 0,
   },
   insightsTitle: {
     fontSize: 22,
     color: '#E2E8F0',
     marginBottom: 2,
+    marginLeft: 0,
   },
   insightsSubtitle: {
     fontSize: 14,
     color: '#94A3B8',
-    marginLeft: 8,
+    marginTop: 2,
+    marginLeft: 0,
   },
   insightsContainer: {
     marginTop: 16,
@@ -811,24 +856,45 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   todayHeaderContent: {
-    marginLeft: 12,
     flex: 1,
+  },
+  todayTitleContainer: {
+    flex: 1,
+    marginLeft: 0,
   },
   todayTitle: {
     fontSize: 22,
     color: '#E2E8F0',
     marginBottom: 2,
+    marginLeft: 0,
   },
   todayDate: {
     fontSize: 14,
     color: '#94A3B8',
-    marginLeft: 8,
+    marginLeft: 0,
   },
   todayIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cyclesIconContainer: undefined,
+  chartIconContainer: undefined,
+  alarmIconContainer: undefined,
+  alarmEditButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  alarmEditText: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
 }); 
