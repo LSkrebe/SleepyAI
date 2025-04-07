@@ -208,25 +208,26 @@ class SleepTrackingService {
 
 IMPORTANT: Return ONLY raw JSON without any markdown formatting, code blocks, or extra characters.
 
-
 Analyze the following sleep data and provide:
-1. Sleep stage scores (0-100) mapped to sleep stages:
-   - 0: Awake
-   - 1-25: Light Sleep (N1)
-   - 26-50: Light Sleep (N2)
-   - 51-75: Deep Sleep (N3)
-   - 76-100: REM Sleep
-2. A recommendation for the sleep window if needed
-3. Sleep insights based on the data (2-3 normal length, actionable insights)
+1. Sleep quality scores (0-100) for each timestamp
+2. Sleep cycle count:
+   - Count the number of complete sleep cycles
+   - A cycle is counted when sleep quality transitions from high to low and back to high
+3. A recommendation for the sleep window if needed
+4. Sleep insights based on the data (2-3 normal length, actionable insights)
 
-Rules for sleep stage scoring:
+Rules for sleep quality scoring:
 - Score based on:
   * Movement patterns (accelerometer/gyroscope data)
   * Phone charging state
   * Phone usage state
   * Environmental factors
 - Since this is a test with limited data, provide a maximum of 12 data points
-- Each score should be mapped to the appropriate sleep stage
+- Higher scores indicate better sleep quality
+
+Rules for sleep cycle counting:
+- Count a cycle when sleep quality transitions from high to low and back to high
+- Ensure at least one cycle is counted if there's any sleep data
 
 Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
@@ -239,7 +240,7 @@ Rules for sleep insights:
 - Make insights actionable with clear suggestions
 
 Expected format (exactly like this, no extra characters):
-{"scores":{"HH:MM:SS":{"score":85,"stage":"REM"},"HH:MM:SS":{"score":45,"stage":"N2"}},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
+{"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
           }, {
             role: "user",
             content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
@@ -294,9 +295,9 @@ ${this.sleepData.map(point =>
       // Emit event with sleep quality scores and insights
       this.eventEmitter.emit('sleepQualityUpdate', {
         scores: analysis.scores,
+        cycles: analysis.cycles,
         insights: analysis.insights || [],
-        environmental: this.sleepData.map(data => data.environmental),
-        cycles: this.calculateSleepCycles(analysis.scores)
+        environmental: this.sleepData.map(data => data.environmental)
       });
       return analysis.scores;
     } catch (error) {
@@ -308,29 +309,30 @@ ${this.sleepData.map(point =>
   calculateSleepCycles(scores) {
     if (!scores || Object.keys(scores).length === 0) return 0;
     
-    // Convert scores to array of stages
-    const stages = Object.values(scores).map(item => item.stage);
+    // Convert scores to array of values
+    const scoreValues = Object.values(scores);
     
-    // Count transitions between different sleep stages
+    // Count cycles based on significant changes in sleep quality
     let cycleCount = 0;
-    let lastStage = null;
+    let lastScore = null;
+    let isAscending = false;
     
-    for (const stage of stages) {
-      if (lastStage !== null && stage !== lastStage) {
-        // Count a cycle when we transition from REM back to N1/N2
-        if (lastStage === 'REM' && (stage === 'N1' || stage === 'N2')) {
-          cycleCount++;
+    for (const score of scoreValues) {
+      if (lastScore !== null) {
+        // Detect cycle transitions based on significant changes
+        if (Math.abs(score - lastScore) > 30) {
+          if (score > lastScore && !isAscending) {
+            cycleCount++;
+            isAscending = true;
+          } else if (score < lastScore && isAscending) {
+            isAscending = false;
+          }
         }
       }
-      lastStage = stage;
+      lastScore = score;
     }
     
-    // If we have any REM sleep, add at least one cycle
-    if (stages.includes('REM') && cycleCount === 0) {
-      cycleCount = 1;
-    }
-    
-    return cycleCount;
+    return Math.max(1, cycleCount);
   }
 
   getCurrentDay() {

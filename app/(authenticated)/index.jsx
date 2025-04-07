@@ -19,10 +19,11 @@ export default function Journal() {
   const [noise, setNoise] = useState(30);
   const [light, setLight] = useState(0);
   const [sleepCycles, setSleepCycles] = useState(4);
+  const [cycleDuration, setCycleDuration] = useState(90);
   const [sleepQualityData, setSleepQualityData] = useState({
     labels: ['22', '23', '0', '1', '2', '3', '4', '5', '6', '7'],
     datasets: [{
-      data: [30, 65, 85, 90, 95, 92, 88, 85, 80, 75],
+      data: [0, 45, 20, 85, 70, 90, 40, 70, 30, 0],
     }],
   });
   const [sleepInsights, setSleepInsights] = useState([
@@ -88,8 +89,7 @@ export default function Journal() {
     const handleSleepQualityUpdate = (data) => {
       // Convert scores object to arrays for the chart
       const times = Object.keys(data.scores);
-      const scores = Object.values(data.scores).map(item => item.score);
-      const stages = Object.values(data.scores).map(item => item.stage);
+      const scores = Object.values(data.scores);
       
       // Format time labels to show only hours
       const labels = times.map(time => {
@@ -116,9 +116,12 @@ export default function Journal() {
       const formattedDuration = `${hours}h ${minutes}m`;
       setSleepDuration(formattedDuration);
 
-      // Update sleep cycles from the service calculation
-      if (data.cycles !== undefined) {
-        setSleepCycles(data.cycles);
+      // Update sleep cycles from API response
+      if (data.cycles) {
+        setSleepCycles(data.cycles.count);
+        // Calculate average duration by dividing total duration by number of cycles
+        const totalMinutes = hours * 60 + minutes;
+        setCycleDuration(Math.round(totalMinutes / data.cycles.count));
       }
 
       // Update environment metrics based on average values
@@ -150,7 +153,7 @@ export default function Journal() {
             ...entry,
             duration: formattedDuration,
             quality: Math.round(averageScore),
-            cycles: data.cycles || 0,
+            cycles: data.cycles ? data.cycles.count : 0,
             isTracked: true
           };
         }
@@ -352,7 +355,7 @@ export default function Journal() {
           <View style={styles.cycleDivider} />
           <View style={styles.cycleItem}>
             <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>{sleepCycles > 0 ? Math.round(sleepDuration.split('h')[0] * 60 + parseInt(sleepDuration.split('h')[1]) / sleepCycles) : 0}</Text>
+              <Text style={styles.cycleValue}>{cycleDuration}</Text>
               <Text style={styles.cycleUnit}>min</Text>
             </View>
             <Text style={styles.cycleLabel}>Avg Duration</Text>
@@ -586,13 +589,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   alarmCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderRadius: 12,
+    backgroundColor: 'rgba(30, 41, 59, 1)',
+    borderRadius: 16,
+    padding: 20,
     marginHorizontal: 16,
     marginTop: 16,
-    overflow: 'hidden',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   alarmIconContainer: {
     width: 48,
