@@ -463,23 +463,6 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Light Level</Text>
-        </View>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={chartData.lightLevel}
-            width={chartWidth}
-            height={220}
-            chartConfig={chartConfigs.lightLevel}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-      </View>
-
-      <View style={styles.chartCard}>
-        <View style={styles.chartTitleContainer}>
           <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
           <Text style={styles.chartTitle}>Ambient Noise</Text>
         </View>
@@ -489,6 +472,23 @@ export default function Stats() {
             width={chartWidth}
             height={220}
             chartConfig={chartConfigs.noiseLevel}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Light Level</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={chartData.lightLevel}
+            width={chartWidth}
+            height={220}
+            chartConfig={chartConfigs.lightLevel}
             bezier
             style={styles.chart}
           />

@@ -224,6 +224,7 @@ Rules for sleep quality scoring:
   * Environmental factors
 - Since this is a test with limited data, provide a maximum of 12 data points
 - Higher scores indicate better sleep quality
+- Above 70 is considered deep sleep
 
 Rules for sleep cycle counting:
 - Count a cycle when sleep quality transitions from high to low and back to high
@@ -234,9 +235,7 @@ Rules for sleep window recommendation:
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
 Rules for sleep insights:
-- Provide 2-3 normal length, actionable insights based on the data
-- Focus on patterns in movement, charging, phone usage, and environmental factors
-- Keep insights concise and specific
+- Provide 2-3 normal length, creative insights based on the data
 - Make insights actionable with clear suggestions
 
 Expected format (exactly like this, no extra characters):

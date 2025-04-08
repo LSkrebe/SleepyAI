@@ -44,6 +44,46 @@ export default function Journal() {
   const slideUpAnim4 = useRef(new Animated.Value(100)).current;
   const slideUpAnim5 = useRef(new Animated.Value(100)).current;
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Today\'s Sleep';
+    
+    const sleepDate = new Date(dateString);
+    const now = new Date();
+    
+    // Compare dates without time
+    const sleepDateOnly = new Date(sleepDate.getFullYear(), sleepDate.getMonth(), sleepDate.getDate());
+    const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Get the difference in days
+    const diffTime = nowDateOnly - sleepDateOnly;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Today\'s Sleep';
+    } else if (diffDays === 1) {
+      return 'Yesterday\'s Sleep';
+    } else {
+      return 'Latest Sleep';
+    }
+  };
+
+  // Format date subtitle
+  const formatDateSubtitle = (dateString) => {
+    if (!dateString) return new Date().toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   // Load saved sleep data and chart data
   useEffect(() => {
     const loadSavedData = async () => {
@@ -75,6 +115,7 @@ export default function Journal() {
           const cardData = JSON.parse(storedCardData);
           setSleepQuality(cardData.quality);
           setSleepDuration(cardData.duration);
+          setDeepSleep(cardData.deepSleep);
           setSleepCycles(cardData.cycles);
           setCycleDuration(cardData.cycleDuration);
           setTemperature(cardData.temperature);
@@ -82,6 +123,10 @@ export default function Journal() {
           setNoise(cardData.noise);
           setLight(cardData.light);
           setSleepInsights(cardData.insights);
+          // Only update latestSleepDate if it's not already set from sleepData
+          if (!latestSleepDate) {
+            setLatestSleepDate(cardData.date);
+          }
         }
       } catch (error) {
         console.error('Error loading saved data:', error);
@@ -97,13 +142,15 @@ export default function Journal() {
         const cardData = {
           quality: sleepQuality,
           duration: sleepDuration,
+          deepSleep: deepSleep,
           cycles: sleepCycles,
           cycleDuration: cycleDuration,
           temperature: temperature,
           humidity: humidity,
           noise: noise,
           light: light,
-          insights: sleepInsights
+          insights: sleepInsights,
+          date: latestSleepDate
         };
 
         await Promise.all([
@@ -121,13 +168,15 @@ export default function Journal() {
     sleepQualityData, 
     sleepQuality, 
     sleepDuration, 
+    deepSleep,
     sleepCycles, 
     cycleDuration,
     temperature,
     humidity,
     noise,
     light,
-    sleepInsights
+    sleepInsights,
+    latestSleepDate
   ]);
 
   useEffect(() => {
@@ -194,6 +243,7 @@ export default function Journal() {
       const endTime = scoresArray[scoresArray.length - 1].time;
       const [endHour, endMinute] = endTime.split(':').map(Number);
       
+      // For same-day sleep sessions, use today's date
       if (startHour >= 18 && endHour < 6) { // If sleep started after 6 PM and ended before 6 AM
         sleepDate.setDate(sleepDate.getDate() - 1);
       }
@@ -224,6 +274,14 @@ export default function Journal() {
       const deepSleepMinutes = Math.floor((deepSleepSeconds % 3600) / 60);
       setDeepSleep(`${deepSleepHours}h ${deepSleepMinutes}m`);
 
+      // Update sleep cycles from API response
+      if (data.cycles) {
+        setSleepCycles(data.cycles.count);
+        // Calculate average duration by dividing total duration by number of cycles
+        const totalMinutes = hours * 60 + minutes;
+        setCycleDuration(Math.round(totalMinutes / data.cycles.count));
+      }
+
       // Update environmental metrics
       setTemperature(data.temperature || 20);
       setHumidity(data.humidity || 45);
@@ -244,12 +302,15 @@ export default function Journal() {
         quality: Math.round(averageScore),
         duration: `${hours}h ${minutes}m`,
         deepSleep: `${deepSleepHours}h ${deepSleepMinutes}m`,
+        cycles: data.cycles ? data.cycles.count : sleepCycles,
+        cycleDuration: data.cycles ? Math.round((hours * 60 + minutes) / data.cycles.count) : cycleDuration,
         temperature: data.temperature || 20,
         humidity: data.humidity || 45,
         noise: data.noise || 30,
         light: data.light || 1,
         insights: data.insights || [],
-        date: sleepDateString
+        date: sleepDateString,
+        timestamp: now.getTime() // Add timestamp to ensure correct date comparison
       };
       AsyncStorage.setItem('cardData', JSON.stringify(cardData));
     };
@@ -308,32 +369,6 @@ export default function Journal() {
     return `${minutesUntil}m`;
   };
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today\'s Sleep';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday\'s Sleep';
-    } else {
-      return 'Latest Sleep';
-    }
-  };
-
-  // Format date subtitle
-  const formatDateSubtitle = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
     <ScrollView 
       style={styles.container}
@@ -373,7 +408,7 @@ export default function Journal() {
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepDuration}</Text>
+              <Text style={styles.statValueSmall}>{sleepDuration}</Text>
               <View style={styles.statValueUnderline} />
             </View>
             <Text style={styles.statLabel}>Duration</Text>
@@ -387,7 +422,7 @@ export default function Journal() {
           </View>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{deepSleep}</Text>
+              <Text style={styles.statValueSmall}>{deepSleep}</Text>
               <View style={styles.statValueUnderline} />
             </View>
             <Text style={styles.statLabel}>Deep Sleep</Text>
@@ -659,12 +694,20 @@ const styles = StyleSheet.create({
   sleepStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
   },
   statItem: {
+    flex: 1,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 28,
+    fontWeight: '800',
+    color: '#E2E8F0',
+  },
+  statValueSmall: {
+    fontSize: 24,
     fontWeight: '800',
     color: '#E2E8F0',
   },
