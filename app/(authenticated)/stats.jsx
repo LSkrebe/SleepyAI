@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer } from 'lucide-react-native';
+import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32;
@@ -23,6 +24,73 @@ export default function Stats() {
   const [timeRange, setTimeRange] = useState('daily');
   const [data] = useState(() => generateData(7));
 
+  const [sleepData, setSleepData] = useState([]);
+  const [latestSleepDate, setLatestSleepDate] = useState(null);
+  const [sleepQuality, setSleepQuality] = useState(85);
+  const [sleepDuration, setSleepDuration] = useState('7h 30m');
+  const [deepSleep, setDeepSleep] = useState('2h 15m');
+  const [temperature, setTemperature] = useState(20);
+  const [humidity, setHumidity] = useState(45);
+  const [noise, setNoise] = useState(30);
+  const [light, setLight] = useState(1);
+  const [sleepInsights, setSleepInsights] = useState([]);
+
+  // Default chart data
+  const defaultChartData = {
+    labels: ['22', '23', '0', '1', '2', '3', '4', '5', '6', '7'],
+    datasets: [{
+      data: [0, 45, 20, 85, 70, 90, 40, 70, 30, 0],
+    }],
+  };
+
+  // Chart data states
+  const [chartData, setChartData] = useState({
+    sleepQuality: defaultChartData,
+    lightLevel: {
+      ...defaultChartData,
+      datasets: [{
+        data: [50, 30, 5, 0, 0, 0, 0, 10, 40, 60],
+      }],
+    },
+    noiseLevel: {
+      ...defaultChartData,
+      datasets: [{
+        data: [40, 35, 30, 25, 20, 25, 30, 35, 40, 45],
+      }],
+    },
+    temperature: {
+      ...defaultChartData,
+      datasets: [{
+        data: [22, 21, 20, 20, 19, 19, 20, 21, 22, 23],
+      }],
+    },
+    humidity: {
+      ...defaultChartData,
+      datasets: [{
+        data: [45, 46, 47, 48, 49, 50, 49, 48, 47, 46],
+      }],
+    },
+    deepSleep: {
+      ...defaultChartData,
+      datasets: [{
+        data: [0, 0, 0, 1, 2, 3, 2, 1, 0, 0],
+      }],
+    },
+    avgDuration: {
+      ...defaultChartData,
+      datasets: [{
+        data: [0, 0, 0, 1, 2, 3, 2, 1, 0, 0],
+      }],
+    },
+    sleepCycles: {
+      ...defaultChartData,
+      datasets: [{
+        data: [0, 0, 1, 2, 3, 4, 3, 2, 1, 0],
+      }],
+    },
+  });
+
+  // Chart configurations
   const baseChartConfig = {
     backgroundColor: '#0F172A',
     backgroundGradientFrom: '#0F172A',
@@ -47,68 +115,156 @@ export default function Stats() {
     paddingRight: 15,
   };
 
-  const sleepQualityConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#3B82F6',
+  const chartConfigs = {
+    sleepQuality: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#3B82F6',
+      },
+    },
+    lightLevel: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#F59E0B',
+      },
+    },
+    noiseLevel: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#8B5CF6',
+      },
+    },
+    temperature: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#EF4444',
+      },
+    },
+    humidity: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#0EA5E9',
+      },
+    },
+    deepSleep: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#10B981',
+      },
+    },
+    avgDuration: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#EC4899',
+      },
+    },
+    sleepCycles: {
+      ...baseChartConfig,
+      color: (opacity = 1) => `rgba(234, 179, 8, ${opacity})`,
+      propsForDots: {
+        ...baseChartConfig.propsForDots,
+        stroke: '#EAB308',
+      },
     },
   };
 
-  const lightLevelConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#F59E0B',
-    },
-  };
+  // Load saved data
+  useEffect(() => {
+    const loadSavedData = async () => {
+      try {
+        const [storedSleepData, storedChartData, storedCardData] = await Promise.all([
+          AsyncStorage.getItem('sleepData'),
+          AsyncStorage.getItem('chartData'),
+          AsyncStorage.getItem('cardData')
+        ]);
+        
+        if (storedSleepData) {
+          const parsedData = JSON.parse(storedSleepData);
+          setSleepData(parsedData);
+          
+          // Find the latest sleep record
+          if (parsedData.length > 0) {
+            const latest = parsedData.reduce((latest, current) => {
+              return new Date(current.date) > new Date(latest.date) ? current : latest;
+            });
+            setLatestSleepDate(latest.date);
+          }
+        }
+        
+        if (storedChartData) {
+          const savedChartData = JSON.parse(storedChartData);
+          setChartData(prevData => ({
+            ...prevData,
+            sleepQuality: savedChartData,
+            lightLevel: {
+              ...prevData.lightLevel,
+              labels: savedChartData.labels,
+              datasets: [{
+                data: savedChartData.datasets[0].data.map(score => Math.max(0, 100 - score)),
+              }],
+            },
+            noiseLevel: {
+              ...prevData.noiseLevel,
+              labels: savedChartData.labels,
+              datasets: [{
+                data: savedChartData.datasets[0].data.map(score => Math.min(100, score + 20)),
+              }],
+            },
+            temperature: {
+              ...prevData.temperature,
+              labels: savedChartData.labels,
+              datasets: [{
+                data: savedChartData.datasets[0].data.map(score => 18 + (score / 5)),
+              }],
+            },
+            humidity: {
+              ...prevData.humidity,
+              labels: savedChartData.labels,
+              datasets: [{
+                data: savedChartData.datasets[0].data.map(score => 40 + (score / 2)),
+              }],
+            },
+            deepSleep: {
+              ...prevData.deepSleep,
+              labels: savedChartData.labels,
+              datasets: [{
+                data: savedChartData.datasets[0].data.map(score => Math.floor(score / 20)),
+              }],
+            },
+          }));
+        }
 
-  const ambientNoiseConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#8B5CF6',
-    },
-  };
-
-  const bedTimeConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#6366F1',
-    },
-  };
-
-  const wakeTimeConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#0EA5E9',
-    },
-  };
-
-  const timeInBedConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#10B981',
-    },
-  };
-
-  const timeToSleepConfig = {
-    ...baseChartConfig,
-    color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
-    propsForDots: {
-      ...baseChartConfig.propsForDots,
-      stroke: '#EC4899',
-    },
-  };
+        if (storedCardData) {
+          const cardData = JSON.parse(storedCardData);
+          setSleepQuality(cardData.quality);
+          setSleepDuration(cardData.duration);
+          setDeepSleep(cardData.deepSleep);
+          setTemperature(cardData.temperature);
+          setHumidity(cardData.humidity);
+          setNoise(cardData.noise);
+          setLight(cardData.light);
+          setSleepInsights(cardData.insights);
+        }
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      }
+    };
+    loadSavedData();
+  }, []);
 
   const sleepQualityData = {
     labels: data.map(d => d.date),
@@ -177,43 +333,61 @@ export default function Stats() {
 
       <View style={styles.timeSelectorContainer}>
         <TouchableOpacity 
-          style={[styles.timeSelectorButton, timeRange === 'daily' && styles.timeSelectorButtonActive]}
+          style={[
+            styles.timeSelectorButton, 
+            timeRange === 'daily' && styles.timeSelectorButtonActive
+          ]}
           onPress={() => setTimeRange('daily')}
         >
-          <Text style={[styles.timeSelectorText, timeRange === 'daily' && styles.timeSelectorTextActive]}>Daily</Text>
+          <Text style={[
+            styles.timeSelectorText, 
+            timeRange === 'daily' && styles.timeSelectorTextActive
+          ]}>Daily</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.timeSelectorButton, timeRange === 'weekly' && styles.timeSelectorButtonActive]}
+          style={[
+            styles.timeSelectorButton, 
+            timeRange === 'weekly' && styles.timeSelectorButtonActive
+          ]}
           onPress={() => setTimeRange('weekly')}
         >
-          <Text style={[styles.timeSelectorText, timeRange === 'weekly' && styles.timeSelectorTextActive]}>Weekly</Text>
+          <Text style={[
+            styles.timeSelectorText, 
+            timeRange === 'weekly' && styles.timeSelectorTextActive
+          ]}>Weekly</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.timeSelectorButton, timeRange === 'monthly' && styles.timeSelectorButtonActive]}
+          style={[
+            styles.timeSelectorButton, 
+            timeRange === 'monthly' && styles.timeSelectorButtonActive
+          ]}
           onPress={() => setTimeRange('monthly')}
         >
-          <Text style={[styles.timeSelectorText, timeRange === 'monthly' && styles.timeSelectorTextActive]}>Monthly</Text>
+          <Text style={[
+            styles.timeSelectorText, 
+            timeRange === 'monthly' && styles.timeSelectorTextActive
+          ]}>Monthly</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.metricsGrid}>
-        <View style={styles.metricCard}>
+        <View style={[styles.metricCard, styles.metricCardSleepQuality]}>
           <Activity size={24} color="#3B82F6" />
-          <Text style={styles.metricValue}>87%</Text>
+          <Text style={styles.metricValue}>{sleepQuality}%</Text>
           <Text style={styles.metricLabel}>Sleep Quality</Text>
         </View>
-        <View style={styles.metricCard}>
-          <Brain size={24} color="#3B82F6" />
-          <Text style={styles.metricValue}>2.3h</Text>
+        <View style={[styles.metricCard, styles.metricCardDeepSleep]}>
+          <Brain size={24} color="#10B981" />
+          <Text style={styles.metricValue}>2h 15m</Text>
           <Text style={styles.metricLabel}>Deep Sleep</Text>
         </View>
-        <View style={styles.metricCard}>
-          <Clock size={24} color="#3B82F6" />
-          <Text style={styles.metricValue}>7.5h</Text>
+        <View style={[styles.metricCard, styles.metricCardDuration]}>
+          <Clock size={24} color="#EC4899" />
+          <Text style={styles.metricValue}>{sleepDuration}</Text>
           <Text style={styles.metricLabel}>Avg Duration</Text>
         </View>
-        <View style={styles.metricCard}>
-          <Sun size={24} color="#3B82F6" />
+        <View style={[styles.metricCard, styles.metricCardCycles]}>
+          <Sun size={24} color="#EAB308" />
           <Text style={styles.metricValue}>4</Text>
           <Text style={styles.metricLabel}>Sleep Cycles</Text>
         </View>
@@ -226,10 +400,61 @@ export default function Stats() {
         </View>
         <View style={styles.chartContainer}>
           <LineChart
-            data={sleepQualityData}
+            data={chartData.sleepQuality}
             width={chartWidth}
             height={220}
-            chartConfig={sleepQualityConfig}
+            chartConfig={chartConfigs.sleepQuality}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Clock size={24} color="#EC4899" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Average Duration</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={chartData.avgDuration}
+            width={chartWidth}
+            height={220}
+            chartConfig={chartConfigs.avgDuration}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Brain size={24} color="#10B981" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Deep Sleep</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={chartData.deepSleep}
+            width={chartWidth}
+            height={220}
+            chartConfig={chartConfigs.deepSleep}
+            bezier
+            style={styles.chart}
+          />
+        </View>
+      </View>
+
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleContainer}>
+          <Sun size={24} color="#EAB308" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Sleep Cycles</Text>
+        </View>
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={chartData.sleepCycles}
+            width={chartWidth}
+            height={220}
+            chartConfig={chartConfigs.sleepCycles}
             bezier
             style={styles.chart}
           />
@@ -243,10 +468,10 @@ export default function Stats() {
         </View>
         <View style={styles.chartContainer}>
           <LineChart
-            data={lightLevelData}
+            data={chartData.lightLevel}
             width={chartWidth}
             height={220}
-            chartConfig={lightLevelConfig}
+            chartConfig={chartConfigs.lightLevel}
             bezier
             style={styles.chart}
           />
@@ -260,10 +485,10 @@ export default function Stats() {
         </View>
         <View style={styles.chartContainer}>
           <LineChart
-            data={ambientNoiseData}
+            data={chartData.noiseLevel}
             width={chartWidth}
             height={220}
-            chartConfig={ambientNoiseConfig}
+            chartConfig={chartConfigs.noiseLevel}
             bezier
             style={styles.chart}
           />
@@ -272,15 +497,15 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Moon size={24} color="#6366F1" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Bed Time</Text>
+          <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Temperature</Text>
         </View>
         <View style={styles.chartContainer}>
           <LineChart
-            data={bedTimeData}
+            data={chartData.temperature}
             width={chartWidth}
             height={220}
-            chartConfig={bedTimeConfig}
+            chartConfig={chartConfigs.temperature}
             bezier
             style={styles.chart}
           />
@@ -289,49 +514,15 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Sunrise size={24} color="#0EA5E9" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Wake Time</Text>
+          <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
+          <Text style={styles.chartTitle}>Humidity</Text>
         </View>
         <View style={styles.chartContainer}>
           <LineChart
-            data={wakeTimeData}
+            data={chartData.humidity}
             width={chartWidth}
             height={220}
-            chartConfig={wakeTimeConfig}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-      </View>
-
-      <View style={styles.chartCard}>
-        <View style={styles.chartTitleContainer}>
-          <Clock size={24} color="#10B981" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Time in Bed</Text>
-        </View>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={timeInBedData}
-            width={chartWidth}
-            height={220}
-            chartConfig={timeInBedConfig}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-      </View>
-
-      <View style={styles.chartCard}>
-        <View style={styles.chartTitleContainer}>
-          <Timer size={24} color="#EC4899" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Time to Fall Asleep</Text>
-        </View>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={timeToSleepData}
-            width={chartWidth}
-            height={220}
-            chartConfig={timeToSleepConfig}
+            chartConfig={chartConfigs.humidity}
             bezier
             style={styles.chart}
           />
@@ -404,21 +595,25 @@ const styles = StyleSheet.create({
   timeSelectorContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderRadius: 12,
+    padding: 8,
+    marginHorizontal: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
   },
   timeSelectorButton: {
     flex: 1,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
     alignItems: 'center',
   },
   timeSelectorButtonActive: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
     borderColor: '#3B82F6',
   },
   timeSelectorText: {
@@ -428,6 +623,7 @@ const styles = StyleSheet.create({
   },
   timeSelectorTextActive: {
     color: '#3B82F6',
+    fontWeight: '600',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -443,6 +639,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#334155',
+  },
+  metricCardSleepQuality: {
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+  },
+  metricCardDeepSleep: {
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+  },
+  metricCardDuration: {
+    borderColor: '#EC4899',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+  },
+  metricCardCycles: {
+    borderColor: '#EAB308',
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
   },
   metricValue: {
     fontSize: 24,

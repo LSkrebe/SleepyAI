@@ -33,6 +33,7 @@ export default function Journal() {
     "Avoid using electronic devices at least 1 hour before bedtime as blue light can disrupt your natural sleep cycle"
   ]);
   const [sleepData, setSleepData] = useState([]);
+  const [latestSleepDate, setLatestSleepDate] = useState(null);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -53,7 +54,16 @@ export default function Journal() {
         ]);
         
         if (storedSleepData) {
-          setSleepData(JSON.parse(storedSleepData));
+          const parsedData = JSON.parse(storedSleepData);
+          setSleepData(parsedData);
+          
+          // Find the latest sleep record
+          if (parsedData.length > 0) {
+            const latest = parsedData.reduce((latest, current) => {
+              return new Date(current.date) > new Date(latest.date) ? current : latest;
+            });
+            setLatestSleepDate(latest.date);
+          }
         }
         
         if (storedChartData) {
@@ -169,6 +179,20 @@ export default function Journal() {
       const times = Object.keys(data.scores);
       const scores = Object.values(data.scores);
       
+      // Get the start time of the sleep session (first timestamp)
+      const startTime = times[0];
+      const [startHour, startMinute] = startTime.split(':').map(Number);
+      
+      // Determine the date based on the start time
+      // If sleep started after 6 PM, it's considered the next day's sleep
+      const now = new Date();
+      const sleepDate = new Date(now);
+      if (startHour >= 18) { // 6 PM
+        // If it's after 6 PM, this is considered the next day's sleep
+        sleepDate.setDate(sleepDate.getDate() - 1);
+      }
+      const sleepDateString = sleepDate.toISOString().split('T')[0];
+
       // Format time labels to show only hours
       const labels = times.map(time => {
         const [hours] = time.split(':');
@@ -240,11 +264,11 @@ export default function Journal() {
       }
 
       // Update Today's Sleep card with actual tracking data
-      const today = new Date().toISOString().split('T')[0];
       const updatedSleepData = sleepData.map(entry => {
-        if (entry.date === today) {
+        if (entry.date === sleepDateString) {
           return {
             ...entry,
+            date: sleepDateString,
             duration: formattedDuration,
             quality: Math.round(averageScore),
             cycles: data.cycles ? data.cycles.count : 0,
@@ -255,16 +279,18 @@ export default function Journal() {
         return entry;
       });
 
-      // If no entry exists for today, create a new one
-      if (!updatedSleepData.some(entry => entry.date === today)) {
-        updatedSleepData.push({
-          date: today,
+      // If no entry exists for this sleep date, create a new one
+      if (!updatedSleepData.some(entry => entry.date === sleepDateString)) {
+        const newEntry = {
+          date: sleepDateString,
           duration: formattedDuration,
           quality: Math.round(averageScore),
           cycles: data.cycles ? data.cycles.count : 0,
           isTracked: true,
           environmental: environmentalMetrics
-        });
+        };
+        updatedSleepData.push(newEntry);
+        setLatestSleepDate(sleepDateString);
       }
 
       setSleepData(updatedSleepData);
@@ -324,6 +350,32 @@ export default function Journal() {
     return `${minutesUntil}m`;
   };
 
+  // Format date for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today\'s Sleep';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday\'s Sleep';
+    } else {
+      return 'Latest Sleep';
+    }
+  };
+
+  // Format date subtitle
+  const formatDateSubtitle = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
     <ScrollView 
       style={styles.container}
@@ -344,8 +396,16 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.todayHeaderContent}>
             <View style={styles.todayTitleContainer}>
-              <Text style={[styles.cardTitle, styles.todayTitle]}>Today's Sleep</Text>
-              <Text style={styles.todayDate}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</Text>
+              <Text style={[styles.cardTitle, styles.todayTitle]}>
+                {latestSleepDate ? formatDate(latestSleepDate) : 'Today\'s Sleep'}
+              </Text>
+              <Text style={styles.todayDate}>
+                {latestSleepDate ? formatDateSubtitle(latestSleepDate) : new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Text>
             </View>
           </View>
           <View style={styles.todayIconContainer}>
