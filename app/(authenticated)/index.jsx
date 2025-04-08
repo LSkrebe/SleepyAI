@@ -15,6 +15,7 @@ export default function Journal() {
   const { alarmTime, isAlarmActive } = useAlarm();
   const [sleepQuality, setSleepQuality] = useState(85);
   const [sleepDuration, setSleepDuration] = useState('7h 30m');
+  const [deepSleep, setDeepSleep] = useState('2h 15m');
   const [temperature, setTemperature] = useState(20);
   const [humidity, setHumidity] = useState(45);
   const [noise, setNoise] = useState(30);
@@ -175,125 +176,82 @@ export default function Journal() {
 
     // Listen for sleep quality updates
     const handleSleepQualityUpdate = (data) => {
-      // Convert scores object to arrays for the chart
-      const times = Object.keys(data.scores);
-      const scores = Object.values(data.scores);
-      
+      // Convert scores object to arrays for charting
+      const scoresArray = Object.entries(data.scores).map(([time, score]) => ({
+        time,
+        score: typeof score === 'object' ? score.score : score
+      }));
+
       // Get the start time of the sleep session (first timestamp)
-      const startTime = times[0];
+      const startTime = scoresArray[0].time;
       const [startHour, startMinute] = startTime.split(':').map(Number);
       
       // Determine the date based on the start time
-      // If sleep started after 6 PM, it's considered the next day's sleep
       const now = new Date();
       const sleepDate = new Date(now);
-      if (startHour >= 18) { // 6 PM
-        // If it's after 6 PM, this is considered the next day's sleep
+      
+      // Only adjust the date if the sleep session started after 6 PM and lasted into the next day
+      const endTime = scoresArray[scoresArray.length - 1].time;
+      const [endHour, endMinute] = endTime.split(':').map(Number);
+      
+      if (startHour >= 18 && endHour < 6) { // If sleep started after 6 PM and ended before 6 AM
         sleepDate.setDate(sleepDate.getDate() - 1);
       }
+      
       const sleepDateString = sleepDate.toISOString().split('T')[0];
+      setLatestSleepDate(sleepDateString);
 
       // Format time labels to show only hours
-      const labels = times.map(time => {
-        const [hours] = time.split(':');
+      const labels = scoresArray.map(item => {
+        const [hours] = item.time.split(':');
         return hours;
       });
 
-      // Update chart data
-      const newChartData = {
-        labels,
-        datasets: [{
-          data: scores,
-        }],
-      };
-      setSleepQualityData(newChartData);
-
       // Calculate average sleep quality
-      const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+      const averageScore = scoresArray.reduce((sum, item) => sum + item.score, 0) / scoresArray.length;
       setSleepQuality(Math.round(averageScore));
 
-      // Update sleep duration (assuming 10-second intervals)
-      const durationInMinutes = (scores.length * 10) / 60;
-      const hours = Math.floor(durationInMinutes / 60);
-      const minutes = Math.round(durationInMinutes % 60);
-      const formattedDuration = `${hours}h ${minutes}m`;
-      setSleepDuration(formattedDuration);
+      // Update sleep duration based on number of scores (assuming 10-second intervals)
+      const totalSeconds = scoresArray.length * 10;
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      setSleepDuration(`${hours}h ${minutes}m`);
 
-      // Update sleep cycles from API response
-      if (data.cycles) {
-        setSleepCycles(data.cycles.count);
-        // Calculate average duration by dividing total duration by number of cycles
-        const totalMinutes = hours * 60 + minutes;
-        setCycleDuration(Math.round(totalMinutes / data.cycles.count));
-      }
+      // Calculate deep sleep time (assuming scores above 70 indicate deep sleep)
+      const deepSleepScores = scoresArray.filter(item => item.score > 70);
+      const deepSleepSeconds = deepSleepScores.length * 10;
+      const deepSleepHours = Math.floor(deepSleepSeconds / 3600);
+      const deepSleepMinutes = Math.floor((deepSleepSeconds % 3600) / 60);
+      setDeepSleep(`${deepSleepHours}h ${deepSleepMinutes}m`);
 
-      // Initialize environmental metrics
-      let environmentalMetrics = {
-        temperature: 0,
-        humidity: 0,
-        noise: 0,
-        light: 0
-      };
+      // Update environmental metrics
+      setTemperature(data.temperature || 20);
+      setHumidity(data.humidity || 45);
+      setNoise(data.noise || 30);
+      setLight(data.light || 1);
+      setSleepInsights(data.insights || []);
 
-      // Update environment metrics based on average values
-      if (data.environmental && data.environmental.length > 0) {
-        const total = data.environmental.reduce((acc, curr) => ({
-          temperature: acc.temperature + Number(curr.temperature),
-          humidity: acc.humidity + Number(curr.humidity),
-          noise: acc.noise + Number(curr.noise),
-          light: acc.light + Number(curr.light)
-        }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
-
-        const count = data.environmental.length;
-        environmentalMetrics = {
-          temperature: Math.round(total.temperature / count),
-          humidity: Math.round(total.humidity / count),
-          noise: Math.round(total.noise / count),
-          light: Math.round(total.light / count)
-        };
-
-        setTemperature(environmentalMetrics.temperature);
-        setHumidity(environmentalMetrics.humidity);
-        setNoise(environmentalMetrics.noise);
-        setLight(environmentalMetrics.light);
-      }
-
-      // Update insights if available
-      if (data.insights && data.insights.length > 0) {
-        setSleepInsights(data.insights);
-      }
-
-      // Update Today's Sleep card with actual tracking data
-      const updatedSleepData = sleepData.map(entry => {
-        if (entry.date === sleepDateString) {
-          return {
-            ...entry,
-            date: sleepDateString,
-            duration: formattedDuration,
-            quality: Math.round(averageScore),
-            cycles: data.cycles ? data.cycles.count : 0,
-            isTracked: true,
-            environmental: environmentalMetrics
-          };
-        }
-        return entry;
+      // Update chart data
+      setSleepQualityData({
+        labels,
+        datasets: [{
+          data: scoresArray.map(item => item.score),
+        }],
       });
 
-      // If no entry exists for this sleep date, create a new one
-      if (!updatedSleepData.some(entry => entry.date === sleepDateString)) {
-        const newEntry = {
-          date: sleepDateString,
-          duration: formattedDuration,
-          quality: Math.round(averageScore),
-          cycles: data.cycles ? data.cycles.count : 0,
-          isTracked: true,
-          environmental: environmentalMetrics
-        };
-        updatedSleepData.push(newEntry);
-        setLatestSleepDate(sleepDateString);
-      }
-
-      setSleepData(updatedSleepData);
+      // Save the updated data
+      const cardData = {
+        quality: Math.round(averageScore),
+        duration: `${hours}h ${minutes}m`,
+        deepSleep: `${deepSleepHours}h ${deepSleepMinutes}m`,
+        temperature: data.temperature || 20,
+        humidity: data.humidity || 45,
+        noise: data.noise || 30,
+        light: data.light || 1,
+        insights: data.insights || [],
+        date: sleepDateString
+      };
+      AsyncStorage.setItem('cardData', JSON.stringify(cardData));
     };
 
     sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
@@ -429,10 +387,10 @@ export default function Journal() {
           </View>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepCycles}</Text>
+              <Text style={styles.statValue}>{deepSleep}</Text>
               <View style={styles.statValueUnderline} />
             </View>
-            <Text style={styles.statLabel}>Cycles</Text>
+            <Text style={styles.statLabel}>Deep Sleep</Text>
           </View>
         </View>
       </Animated.View>
