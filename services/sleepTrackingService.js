@@ -1,5 +1,5 @@
 import { Accelerometer, Gyroscope } from 'expo-sensors';
-import { GROQ_API_KEY } from '@env';
+import Constants from 'expo-constants';
 import { EventEmitter } from 'events';
 
 class SleepTrackingService {
@@ -189,7 +189,8 @@ class SleepTrackingService {
 
   async analyzeSleepData() {
     if (this.sleepData.length === 0) return;
-    if (!GROQ_API_KEY) {
+    const groqKey = Constants.expoConfig.extra.EXPO_PUBLIC_GROQ_API_KEY;
+    if (!groqKey) {
       return null;
     }
 
@@ -198,7 +199,7 @@ class SleepTrackingService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${GROQ_API_KEY}`
+          'Authorization': `Bearer ${groqKey}`
         },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",

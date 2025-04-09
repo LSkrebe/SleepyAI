@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1242" height="2436" viewBox="0 0 1242 2436" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1242" height="2436" fill="#0F172A"/>
+  <path d="M621 500C496.2 500 397 599.2 397 724C397 848.8 496.2 948 621 948C745.8 948 845 848.8 845 724C845 599.2 745.8 500 621 500ZM621 884C528.2 884 461 816.8 461 724C461 631.2 528.2 564 621 564C713.8 564 781 631.2 781 724C781 816.8 713.8 884 621 884Z" fill="white"/>
+  <path d="M621 1012C496.2 1012 397 1111.2 397 1236H845C845 1111.2 745.8 1012 621 1012Z" fill="white"/>
+  <text x="621" y="1500" font-family="Arial" font-size="48" fill="white" text-anchor="middle">SleepyAI</text>
+</svg> 
