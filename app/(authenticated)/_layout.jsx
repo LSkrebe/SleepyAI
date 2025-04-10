@@ -15,6 +15,12 @@ export default function AuthenticatedLayout() {
             borderTopWidth: 0,
             elevation: 0,
             shadowOpacity: 0,
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
           },
           headerShown: false, // Hide the header for all tabs
         }}
