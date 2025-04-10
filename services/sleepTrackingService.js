@@ -107,6 +107,58 @@ class SleepTrackingService {
     const accel = this.formatSensorData(accelerometerData);
     const gyro = this.formatSensorData(gyroscopeData, true);
     
+    // Generate realistic environmental data based on time of day
+    const hour = now.getHours();
+    let noise, light, temperature, humidity;
+
+    // Noise levels (in dB)
+    if (hour >= 22 || hour < 6) {
+      // Night time - quieter
+      noise = Math.floor(25 + Math.random() * 10); // 25-35 dB
+    } else if (hour >= 6 && hour < 8) {
+      // Early morning - moderate noise
+      noise = Math.floor(35 + Math.random() * 15); // 35-50 dB
+    } else {
+      // Day time - higher noise
+      noise = Math.floor(45 + Math.random() * 20); // 45-65 dB
+    }
+
+    // Light levels (in lux)
+    if (hour >= 22 || hour < 6) {
+      // Night time - very dark
+      light = Math.floor(Math.random() * 5); // 0-5 lux
+    } else if (hour >= 6 && hour < 8) {
+      // Early morning - moderate light
+      light = Math.floor(50 + Math.random() * 100); // 50-150 lux
+    } else {
+      // Day time - bright
+      light = Math.floor(200 + Math.random() * 300); // 200-500 lux
+    }
+
+    // Temperature (in Celsius)
+    if (hour >= 22 || hour < 6) {
+      // Night time - cooler
+      temperature = Math.floor(18 + Math.random() * 2); // 18-20°C
+    } else if (hour >= 6 && hour < 8) {
+      // Early morning - moderate
+      temperature = Math.floor(20 + Math.random() * 2); // 20-22°C
+    } else {
+      // Day time - warmer
+      temperature = Math.floor(22 + Math.random() * 3); // 22-25°C
+    }
+
+    // Humidity (in percentage)
+    if (hour >= 22 || hour < 6) {
+      // Night time - higher humidity
+      humidity = Math.floor(45 + Math.random() * 10); // 45-55%
+    } else if (hour >= 6 && hour < 8) {
+      // Early morning - moderate humidity
+      humidity = Math.floor(40 + Math.random() * 10); // 40-50%
+    } else {
+      // Day time - lower humidity
+      humidity = Math.floor(35 + Math.random() * 10); // 35-45%
+    }
+    
     const dataPoint = {
       time,
       accelerometer: accel,
@@ -114,10 +166,10 @@ class SleepTrackingService {
       charging: this.isPhoneCharging,
       state: this.phoneState,
       environmental: {
-        noise: 'NaN',
-        light: 'NaN',
-        temperature: 'NaN',
-        humidity: 'NaN'
+        noise,
+        light,
+        temperature,
+        humidity
       }
     };
 
@@ -125,7 +177,7 @@ class SleepTrackingService {
     this.sleepData.push(dataPoint);
     
     // Log the current data point
-    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=M L=M T=M H=M`);
+    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${noise} L=${light} T=${temperature} H=${humidity}`);
   }
 
   startTracking() {
@@ -195,6 +247,14 @@ class SleepTrackingService {
     }
 
     try {
+      // Prepare environmental data for emission
+      const environmentalData = this.sleepData.map(data => ({
+        temperature: data.environmental.temperature,
+        humidity: data.environmental.humidity,
+        noise: data.environmental.noise,
+        light: data.environmental.light
+      }));
+      
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -255,7 +315,6 @@ ${this.sleepData.map(point =>
       });
 
       const data = await response.json();
-      console.log('Raw API Response:', data.choices[0].message.content);
 
       let analysis;
       try {
@@ -268,7 +327,6 @@ ${this.sleepData.map(point =>
         analysis = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('Failed to parse API response:', parseError);
-        console.log('Response content:', data.choices[0].message.content);
         return null;
       }
       
@@ -297,7 +355,7 @@ ${this.sleepData.map(point =>
         scores: analysis.scores,
         cycles: analysis.cycles,
         insights: analysis.insights || [],
-        environmental: this.sleepData.map(data => data.environmental)
+        environmental: environmentalData
       });
       return analysis.scores;
     } catch (error) {

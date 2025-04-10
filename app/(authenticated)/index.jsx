@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Activity } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
@@ -43,6 +43,15 @@ export default function Journal() {
   const slideUpAnim3 = useRef(new Animated.Value(100)).current;
   const slideUpAnim4 = useRef(new Animated.Value(100)).current;
   const slideUpAnim5 = useRef(new Animated.Value(100)).current;
+
+  // Save card data to AsyncStorage
+  const saveCardData = useCallback(async (data) => {
+    try {
+      await AsyncStorage.setItem('cardData', JSON.stringify(data));
+    } catch (error) {
+      console.error('Error saving card data:', error);
+    }
+  }, []);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -179,6 +188,51 @@ export default function Journal() {
     latestSleepDate
   ]);
 
+  const handleSleepQualityUpdate = useCallback((data) => {
+    // Process environmental data
+    if (data.environmental && data.environmental.length > 0) {
+      // Calculate average environmental values
+      const avgEnvironmental = data.environmental.reduce((acc, curr) => ({
+        temperature: acc.temperature + curr.temperature,
+        humidity: acc.humidity + curr.humidity,
+        noise: acc.noise + curr.noise,
+        light: acc.light + curr.light
+      }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
+
+      const count = data.environmental.length;
+      setTemperature(Math.round(avgEnvironmental.temperature / count));
+      setHumidity(Math.round(avgEnvironmental.humidity / count));
+      setNoise(Math.round(avgEnvironmental.noise / count));
+      setLight(Math.round(avgEnvironmental.light / count));
+    }
+
+    // Update sleep quality scores
+    if (data.scores) {
+      setSleepQualityScores(data.scores);
+    }
+
+    // Update sleep cycles
+    if (data.cycles) {
+      setSleepCycles(data.cycles.count);
+    }
+
+    // Update insights
+    if (data.insights) {
+      setSleepInsights(data.insights);
+    }
+
+    // Save to AsyncStorage
+    saveCardData({
+      sleepQualityScores: data.scores || {},
+      sleepCycles: data.cycles?.count || 0,
+      sleepInsights: data.insights || [],
+      temperature,
+      humidity,
+      noise,
+      light
+    });
+  }, [saveCardData, temperature, humidity, noise, light]);
+
   useEffect(() => {
     // Start animations
     Animated.parallel([
@@ -282,11 +336,29 @@ export default function Journal() {
         setCycleDuration(Math.round(totalMinutes / data.cycles.count));
       }
 
-      // Update environmental metrics
-      setTemperature(data.temperature || 20);
-      setHumidity(data.humidity || 45);
-      setNoise(data.noise || 30);
-      setLight(data.light || 1);
+      // Update environmental metrics from the sleep data
+      if (data.environmental && data.environmental.length > 0) {
+        // Calculate average environmental values for the sleep session
+        const avgEnvironmental = data.environmental.reduce((acc, curr) => ({
+          temperature: acc.temperature + curr.temperature,
+          humidity: acc.humidity + curr.humidity,
+          noise: acc.noise + curr.noise,
+          light: acc.light + curr.light
+        }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
+
+        const count = data.environmental.length;
+        const newTemperature = Math.round(avgEnvironmental.temperature / count);
+        const newHumidity = Math.round(avgEnvironmental.humidity / count);
+        const newNoise = Math.round(avgEnvironmental.noise / count);
+        const newLight = Math.round(avgEnvironmental.light / count);
+
+        setTemperature(newTemperature);
+        setHumidity(newHumidity);
+        setNoise(newNoise);
+        setLight(newLight);
+      }
+
+      // Update sleep insights
       setSleepInsights(data.insights || []);
 
       // Update chart data
@@ -304,10 +376,10 @@ export default function Journal() {
         deepSleep: `${deepSleepHours}h ${deepSleepMinutes}m`,
         cycles: data.cycles ? data.cycles.count : sleepCycles,
         cycleDuration: data.cycles ? Math.round((hours * 60 + minutes) / data.cycles.count) : cycleDuration,
-        temperature: data.temperature || 20,
-        humidity: data.humidity || 45,
-        noise: data.noise || 30,
-        light: data.light || 1,
+        temperature: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.temperature, 0) / data.environmental.length) : temperature,
+        humidity: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.humidity, 0) / data.environmental.length) : humidity,
+        noise: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.noise, 0) / data.environmental.length) : noise,
+        light: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.light, 0) / data.environmental.length) : light,
         insights: data.insights || [],
         date: sleepDateString,
         timestamp: now.getTime() // Add timestamp to ensure correct date comparison
@@ -315,8 +387,10 @@ export default function Journal() {
       AsyncStorage.setItem('cardData', JSON.stringify(cardData));
     };
 
+    // Set up the event listener
     sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
 
+    // Clean up the event listener when component unmounts
     return () => {
       sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
     };
