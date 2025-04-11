@@ -490,7 +490,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
-            <Text style={styles.insightsSubtitle}>Last 24 hours</Text>
+            <Text style={styles.insightsSubtitle}>Latest sleep record</Text>
           </View>
           <View style={styles.todayIconContainer}>
             <Activity size={28} color="#3B82F6" />
