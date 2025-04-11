@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer } from 'lucide-react-native';
+import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer, ArrowUp, ArrowDown } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32;
@@ -19,6 +19,15 @@ const staticData = {
     datasets: [{
       data: [85, 90, 75, 80, 88, 82, 87]
     }]
+  },
+  trends: {
+    sleepQuality: { value: 5, isPositive: true },
+    sleepDuration: { value: 2, isPositive: true },
+    sleepCycles: { value: 3, isPositive: true },
+    ambientNoise: { value: 4, isPositive: false },
+    lightLevel: { value: 1, isPositive: false },
+    temperature: { value: 2, isPositive: true },
+    humidity: { value: 3, isPositive: false }
   }
 };
 
@@ -106,6 +115,23 @@ const chartConfigs = {
   },
 };
 
+// Add TrendIndicator component
+const TrendIndicator = ({ value, isPositive }) => (
+  <View style={styles.trendContainer}>
+    {isPositive ? (
+      <ArrowUp size={16} color="#10B981" />
+    ) : (
+      <ArrowDown size={16} color="#EF4444" />
+    )}
+    <Text style={[
+      styles.trendText,
+      isPositive ? styles.trendTextPositive : styles.trendTextNegative
+    ]}>
+      {value}%
+    </Text>
+  </View>
+);
+
 export default function Stats() {
   return (
     <ScrollView 
@@ -142,8 +168,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Sleep Quality</Text>
+          <View style={styles.chartTitleLeft}>
+            <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Sleep Quality</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.sleepQuality} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -159,8 +188,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Clock size={24} color="#EC4899" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Sleep Duration</Text>
+          <View style={styles.chartTitleLeft}>
+            <Clock size={24} color="#EC4899" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Sleep Duration</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.sleepDuration} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -176,8 +208,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Sun size={24} color="#EAB308" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Sleep Cycles</Text>
+          <View style={styles.chartTitleLeft}>
+            <Sun size={24} color="#EAB308" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Sleep Cycles</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.sleepCycles} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -193,8 +228,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Ambient Noise</Text>
+          <View style={styles.chartTitleLeft}>
+            <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Ambient Noise</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.ambientNoise} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -210,8 +248,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Light Level</Text>
+          <View style={styles.chartTitleLeft}>
+            <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Light Level</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.lightLevel} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -227,8 +268,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Temperature</Text>
+          <View style={styles.chartTitleLeft}>
+            <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Temperature</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.temperature} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -244,8 +288,11 @@ export default function Stats() {
 
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
-          <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
-          <Text style={styles.chartTitle}>Humidity</Text>
+          <View style={styles.chartTitleLeft}>
+            <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
+            <Text style={styles.chartTitle}>Humidity</Text>
+          </View>
+          <TrendIndicator {...staticData.trends.humidity} />
         </View>
         <View style={styles.chartContainer}>
           <LineChart
@@ -377,7 +424,12 @@ const styles = StyleSheet.create({
   chartTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  chartTitleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   chartIcon: {
     marginRight: 8,
@@ -462,5 +514,26 @@ const styles = StyleSheet.create({
   metricItemLight: {
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderColor: '#F59E0B',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  trendText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  trendTextPositive: {
+    color: '#10B981',
+  },
+  trendTextNegative: {
+    color: '#EF4444',
   },
 }); 
