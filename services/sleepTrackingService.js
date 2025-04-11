@@ -1,6 +1,7 @@
 import { Accelerometer, Gyroscope } from 'expo-sensors';
 import Constants from 'expo-constants';
 import { EventEmitter } from 'events';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class SleepTrackingService {
   constructor() {
@@ -261,7 +262,22 @@ class SleepTrackingService {
       // Handle overnight case
       if (totalMinutes < 0) {
         totalMinutes += 24 * 60; // Add 24 hours worth of minutes
-      } 
+      }
+
+      // Calculate average environmental data
+      const environmentalAverages = this.sleepData.reduce((acc, data) => {
+        acc.temperature += data.environmental.temperature;
+        acc.humidity += data.environmental.humidity;
+        acc.noise += data.environmental.noise;
+        acc.light += data.environmental.light;
+        return acc;
+      }, { temperature: 0, humidity: 0, noise: 0, light: 0 });
+
+      const dataCount = this.sleepData.length;
+      environmentalAverages.temperature = Math.round(environmentalAverages.temperature / dataCount);
+      environmentalAverages.humidity = Math.round(environmentalAverages.humidity / dataCount);
+      environmentalAverages.noise = Math.round(environmentalAverages.noise / dataCount);
+      environmentalAverages.light = Math.round(environmentalAverages.light / dataCount);
 
       // Prepare environmental data for emission
       const environmentalData = this.sleepData.map(data => ({
@@ -374,6 +390,38 @@ ${this.sleepData.map(point =>
         environmental: environmentalData,
         sleepDuration: totalMinutes
       });
+
+      // After successful analysis, save the sleep record
+      const sleepRecord = {
+        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        duration: totalMinutes,
+        quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
+        environmental: environmentalAverages,
+        cycles: analysis.cycles.count
+      };
+
+      // Save to AsyncStorage
+      try {
+        const existingRecords = await AsyncStorage.getItem('sleepRecords');
+        let records = existingRecords ? JSON.parse(existingRecords) : [];
+        
+        // Keep only the last 7 days of records
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        records = records.filter(record => new Date(record.date) >= oneWeekAgo);
+        
+        // Add new record
+        records.push(sleepRecord);
+        
+        // Save updated records
+        await AsyncStorage.setItem('sleepRecords', JSON.stringify(records));
+        
+        // Emit event with updated records
+        this.eventEmitter.emit('sleepRecordsUpdate', records);
+      } catch (error) {
+        console.error('Error saving sleep record:', error);
+      }
+
       return analysis.scores;
     } catch (error) {
       console.error('Error analyzing sleep data:', error);
@@ -430,6 +478,26 @@ ${this.sleepData.map(point =>
 
   offSleepWindowUpdate(callback) {
     this.eventEmitter.off('sleepWindowUpdate', callback);
+  }
+
+  // Add new method to get sleep records
+  async getSleepRecords() {
+    try {
+      const records = await AsyncStorage.getItem('sleepRecords');
+      return records ? JSON.parse(records) : [];
+    } catch (error) {
+      console.error('Error getting sleep records:', error);
+      return [];
+    }
+  }
+
+  // Add new event listener methods
+  onSleepRecordsUpdate(callback) {
+    this.eventEmitter.on('sleepRecordsUpdate', callback);
+  }
+
+  offSleepRecordsUpdate(callback) {
+    this.eventEmitter.off('sleepRecordsUpdate', callback);
   }
 }
 

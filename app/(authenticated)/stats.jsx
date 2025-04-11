@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer, ArrowUp, ArrowDown } from 'lucide-react-native';
+import sleepTrackingService from '../../services/sleepTrackingService';
 
 const { width: screenWidth } = Dimensions.get('window');
 const chartWidth = screenWidth - 32;
@@ -133,6 +134,70 @@ const TrendIndicator = ({ value, isPositive }) => (
 );
 
 export default function Stats() {
+  const [averages, setAverages] = useState({
+    sleepQuality: 0,
+    sleepDuration: '0h 0m',
+    temperature: 0,
+    humidity: 0,
+    noise: 0,
+    light: 0,
+    cycles: 0
+  });
+
+  useEffect(() => {
+    const loadSleepRecords = async () => {
+      const records = await sleepTrackingService.getSleepRecords();
+      
+      if (records.length > 0) {
+        // Calculate averages
+        const totalQuality = records.reduce((sum, record) => sum + record.quality, 0);
+        const totalDuration = records.reduce((sum, record) => sum + record.duration, 0);
+        const totalCycles = records.reduce((sum, record) => sum + record.cycles, 0);
+        
+        const avgQuality = Math.round(totalQuality / records.length);
+        const avgDuration = totalDuration / records.length;
+        const avgCycles = Math.round(totalCycles / records.length);
+        
+        // Format duration
+        const hours = Math.floor(avgDuration / 60);
+        const minutes = Math.round(avgDuration % 60);
+        const formattedDuration = `${hours}h ${minutes}m`;
+
+        // Calculate environmental averages
+        const envAverages = records.reduce((acc, record) => {
+          acc.temperature += record.environmental.temperature;
+          acc.humidity += record.environmental.humidity;
+          acc.noise += record.environmental.noise;
+          acc.light += record.environmental.light;
+          return acc;
+        }, { temperature: 0, humidity: 0, noise: 0, light: 0 });
+
+        const envCount = records.length;
+        setAverages({
+          sleepQuality: avgQuality,
+          sleepDuration: formattedDuration,
+          temperature: Math.round(envAverages.temperature / envCount),
+          humidity: Math.round(envAverages.humidity / envCount),
+          noise: Math.round(envAverages.noise / envCount),
+          light: Math.round(envAverages.light / envCount),
+          cycles: avgCycles
+        });
+      }
+    };
+
+    loadSleepRecords();
+
+    // Listen for new sleep records
+    const handleSleepRecordsUpdate = (records) => {
+      loadSleepRecords();
+    };
+
+    sleepTrackingService.onSleepRecordsUpdate(handleSleepRecordsUpdate);
+    return () => {
+      sleepTrackingService.offSleepRecordsUpdate(handleSleepRecordsUpdate);
+    };
+  }, []);
+
   return (
     <ScrollView 
       style={styles.container}
@@ -154,15 +219,15 @@ export default function Stats() {
           <View style={styles.metricIconContainer}>
             <Activity size={24} color="#3B82F6" />
           </View>
-          <Text style={styles.metricValue}>{staticData.sleepQuality}%</Text>
-          <Text style={styles.metricLabel}>Sleep Quality</Text>
+          <Text style={styles.metricValue}>{averages.sleepQuality}%</Text>
+          <Text style={styles.metricLabel}>Avg. Quality</Text>
         </View>
         <View style={[styles.metricCard, styles.metricCardDuration]}>
           <View style={styles.metricIconContainer}>
             <Clock size={24} color="#EC4899" />
           </View>
-          <Text style={styles.metricValue}>{staticData.sleepDuration}</Text>
-          <Text style={styles.metricLabel}>Sleep Duration</Text>
+          <Text style={styles.metricValue}>{averages.sleepDuration}</Text>
+          <Text style={styles.metricLabel}>Avg. Duration</Text>
         </View>
       </View>
 
