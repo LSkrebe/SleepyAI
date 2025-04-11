@@ -247,6 +247,24 @@ class SleepTrackingService {
     }
 
     try {
+      // Calculate sleep duration
+      const firstTime = this.sleepData[0].time;
+      const lastTime = this.sleepData[this.sleepData.length - 1].time;
+      
+      // Parse times into hours and minutes
+      const [firstHours, firstMinutes] = firstTime.split(':').map(Number);
+      const [lastHours, lastMinutes] = lastTime.split(':').map(Number);
+      
+      // Calculate total minutes
+      let totalMinutes = (lastHours * 60 + lastMinutes) - (firstHours * 60 + firstMinutes);
+      
+      // Handle overnight case
+      if (totalMinutes < 0) {
+        totalMinutes += 24 * 60; // Add 24 hours worth of minutes
+      } 
+      
+      console.log(`Sleep duration in sleep tracking service: ${totalMinutes} minutes`);
+
       // Prepare environmental data for emission
       const environmentalData = this.sleepData.map(data => ({
         temperature: data.environmental.temperature,
@@ -283,7 +301,7 @@ Rules for sleep quality scoring:
   * Phone charging state
   * Phone usage state
   * Environmental factors
-- Since this is a test with limited data, provide a maximum of 12 data points
+- Provide a maximum of 12 data points
 - Higher scores indicate better sleep quality
 - Above 70 is considered deep sleep
 
@@ -355,7 +373,8 @@ ${this.sleepData.map(point =>
         scores: analysis.scores,
         cycles: analysis.cycles,
         insights: analysis.insights || [],
-        environmental: environmentalData
+        environmental: environmentalData,
+        sleepDuration: totalMinutes
       });
       return analysis.scores;
     } catch (error) {

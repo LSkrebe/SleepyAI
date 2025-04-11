@@ -315,10 +315,10 @@ export default function Journal() {
       const averageScore = scoresArray.reduce((sum, item) => sum + item.score, 0) / scoresArray.length;
       setSleepQuality(Math.round(averageScore));
 
-      // Update sleep duration based on number of scores (assuming 10-second intervals)
-      const totalSeconds = scoresArray.length * 10;
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      // Update sleep duration
+      const totalMinutes = data.sleepDuration;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
       setSleepDuration(`${hours}h ${minutes}m`);
 
       // Calculate deep sleep time (assuming scores above 70 indicate deep sleep)
