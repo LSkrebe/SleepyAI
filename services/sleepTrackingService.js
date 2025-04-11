@@ -262,8 +262,6 @@ class SleepTrackingService {
       if (totalMinutes < 0) {
         totalMinutes += 24 * 60; // Add 24 hours worth of minutes
       } 
-      
-      console.log(`Sleep duration in sleep tracking service: ${totalMinutes} minutes`);
 
       // Prepare environmental data for emission
       const environmentalData = this.sleepData.map(data => ({

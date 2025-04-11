@@ -15,7 +15,6 @@ export default function Journal() {
   const { alarmTime, isAlarmActive } = useAlarm();
   const [sleepQuality, setSleepQuality] = useState(85);
   const [sleepDuration, setSleepDuration] = useState('7h 30m');
-  const [deepSleep, setDeepSleep] = useState('2h 15m');
   const [temperature, setTemperature] = useState(20);
   const [humidity, setHumidity] = useState(45);
   const [noise, setNoise] = useState(30);
@@ -124,7 +123,6 @@ export default function Journal() {
           const cardData = JSON.parse(storedCardData);
           setSleepQuality(cardData.quality);
           setSleepDuration(cardData.duration);
-          setDeepSleep(cardData.deepSleep);
           setSleepCycles(cardData.cycles);
           setCycleDuration(cardData.cycleDuration);
           setTemperature(cardData.temperature);
@@ -151,7 +149,6 @@ export default function Journal() {
         const cardData = {
           quality: sleepQuality,
           duration: sleepDuration,
-          deepSleep: deepSleep,
           cycles: sleepCycles,
           cycleDuration: cycleDuration,
           temperature: temperature,
@@ -177,7 +174,6 @@ export default function Journal() {
     sleepQualityData, 
     sleepQuality, 
     sleepDuration, 
-    deepSleep,
     sleepCycles, 
     cycleDuration,
     temperature,
@@ -321,13 +317,6 @@ export default function Journal() {
       const minutes = totalMinutes % 60;
       setSleepDuration(`${hours}h ${minutes}m`);
 
-      // Calculate deep sleep time (assuming scores above 70 indicate deep sleep)
-      const deepSleepScores = scoresArray.filter(item => item.score > 70);
-      const deepSleepSeconds = deepSleepScores.length * 10;
-      const deepSleepHours = Math.floor(deepSleepSeconds / 3600);
-      const deepSleepMinutes = Math.floor((deepSleepSeconds % 3600) / 60);
-      setDeepSleep(`${deepSleepHours}h ${deepSleepMinutes}m`);
-
       // Update sleep cycles from API response
       if (data.cycles) {
         setSleepCycles(data.cycles.count);
@@ -373,7 +362,6 @@ export default function Journal() {
       const cardData = {
         quality: Math.round(averageScore),
         duration: `${hours}h ${minutes}m`,
-        deepSleep: `${deepSleepHours}h ${deepSleepMinutes}m`,
         cycles: data.cycles ? data.cycles.count : sleepCycles,
         cycleDuration: data.cycles ? Math.round((hours * 60 + minutes) / data.cycles.count) : cycleDuration,
         temperature: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.temperature, 0) / data.environmental.length) : temperature,
@@ -482,24 +470,18 @@ export default function Journal() {
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValueSmall}>{sleepDuration}</Text>
+              <Text style={styles.statValue}>{sleepDuration}</Text>
               <View style={styles.statValueUnderline} />
             </View>
-            <Text style={styles.statLabel}>Duration</Text>
+            <Text style={styles.statLabel}>Sleep Duration</Text>
           </View>
+          <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
               <Text style={styles.statValue}>{sleepQuality}%</Text>
               <View style={styles.statValueUnderline} />
             </View>
-            <Text style={styles.statLabel}>Quality</Text>
-          </View>
-          <View style={styles.statItem}>
-            <View style={styles.statValueContainer}>
-              <Text style={styles.statValueSmall}>{deepSleep}</Text>
-              <View style={styles.statValueUnderline} />
-            </View>
-            <Text style={styles.statLabel}>Deep Sleep</Text>
+            <Text style={styles.statLabel}>Sleep Quality</Text>
           </View>
         </View>
       </Animated.View>
@@ -769,35 +751,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 16
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
+    paddingVertical: 12,
+  },
+  statDivider: {
+    width: 1,
+    height: 50,
+    backgroundColor: '#334155',
+    marginHorizontal: 16,
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#E2E8F0',
-  },
-  statValueSmall: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '800',
     color: '#E2E8F0',
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#94A3B8',
-    marginTop: 4,
+    marginTop: 8,
+    fontWeight: '500',
   },
   statValueContainer: {
     alignItems: 'center',
   },
   statValueUnderline: {
-    width: 40,
-    height: 1,
+    width: 50,
+    height: 2,
     backgroundColor: '#3B82F6',
-    marginTop: 0,
+    marginTop: 6,
     borderRadius: 1,
   },
   insightItem: {

@@ -21,14 +21,13 @@ const generateData = (days) => {
 };
 
 export default function Stats() {
-  const [timeRange, setTimeRange] = useState('daily');
+  const [timeRange, setTimeRange] = useState('weekly');
   const [data] = useState(() => generateData(7));
 
   const [sleepData, setSleepData] = useState([]);
   const [latestSleepDate, setLatestSleepDate] = useState(null);
   const [sleepQuality, setSleepQuality] = useState(85);
   const [sleepDuration, setSleepDuration] = useState('7h 30m');
-  const [deepSleep, setDeepSleep] = useState('2h 15m');
   const [temperature, setTemperature] = useState(20);
   const [humidity, setHumidity] = useState(45);
   const [noise, setNoise] = useState(30);
@@ -252,7 +251,6 @@ export default function Stats() {
           const cardData = JSON.parse(storedCardData);
           setSleepQuality(cardData.quality);
           setSleepDuration(cardData.duration);
-          setDeepSleep(cardData.deepSleep);
           setTemperature(cardData.temperature);
           setHumidity(cardData.humidity);
           setNoise(cardData.noise);
@@ -335,18 +333,6 @@ export default function Stats() {
         <TouchableOpacity 
           style={[
             styles.timeSelectorButton, 
-            timeRange === 'daily' && styles.timeSelectorButtonActive
-          ]}
-          onPress={() => setTimeRange('daily')}
-        >
-          <Text style={[
-            styles.timeSelectorText, 
-            timeRange === 'daily' && styles.timeSelectorTextActive
-          ]}>Daily</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            styles.timeSelectorButton, 
             timeRange === 'weekly' && styles.timeSelectorButtonActive
           ]}
           onPress={() => setTimeRange('weekly')}
@@ -356,6 +342,7 @@ export default function Stats() {
             timeRange === 'weekly' && styles.timeSelectorTextActive
           ]}>Weekly</Text>
         </TouchableOpacity>
+        <View style={styles.timeSelectorDivider} />
         <TouchableOpacity 
           style={[
             styles.timeSelectorButton, 
@@ -372,24 +359,18 @@ export default function Stats() {
 
       <View style={styles.metricsGrid}>
         <View style={[styles.metricCard, styles.metricCardSleepQuality]}>
-          <Activity size={24} color="#3B82F6" />
+          <View style={styles.metricIconContainer}>
+            <Activity size={24} color="#3B82F6" />
+          </View>
           <Text style={styles.metricValue}>{sleepQuality}%</Text>
           <Text style={styles.metricLabel}>Sleep Quality</Text>
         </View>
-        <View style={[styles.metricCard, styles.metricCardDeepSleep]}>
-          <Brain size={24} color="#10B981" />
-          <Text style={styles.metricValue}>2h 15m</Text>
-          <Text style={styles.metricLabel}>Deep Sleep</Text>
-        </View>
         <View style={[styles.metricCard, styles.metricCardDuration]}>
-          <Clock size={24} color="#EC4899" />
+          <View style={styles.metricIconContainer}>
+            <Clock size={24} color="#EC4899" />
+          </View>
           <Text style={styles.metricValue}>{sleepDuration}</Text>
-          <Text style={styles.metricLabel}>Avg Duration</Text>
-        </View>
-        <View style={[styles.metricCard, styles.metricCardCycles]}>
-          <Sun size={24} color="#EAB308" />
-          <Text style={styles.metricValue}>4</Text>
-          <Text style={styles.metricLabel}>Sleep Cycles</Text>
+          <Text style={styles.metricLabel}>Sleep Duration</Text>
         </View>
       </View>
 
@@ -598,26 +579,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderRadius: 12,
-    padding: 8,
+    padding: 4,
     marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#334155',
   },
   timeSelectorButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 8,
     alignItems: 'center',
   },
   timeSelectorButtonActive: {
     backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#3B82F6',
   },
   timeSelectorText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '500',
     color: '#94A3B8',
   },
@@ -625,14 +604,19 @@ const styles = StyleSheet.create({
     color: '#3B82F6',
     fontWeight: '600',
   },
+  timeSelectorDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#334155',
+  },
   metricsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     padding: 16,
     gap: 16,
   },
   metricCard: {
-    width: '47%',
+    flex: 1,
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
     borderRadius: 16,
     padding: 24,
@@ -644,28 +628,29 @@ const styles = StyleSheet.create({
     borderColor: '#3B82F6',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
   },
-  metricCardDeepSleep: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-  },
   metricCardDuration: {
     borderColor: '#EC4899',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
   },
-  metricCardCycles: {
-    borderColor: '#EAB308',
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+  metricIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   metricValue: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#E2E8F0',
-    marginTop: 8,
+    marginBottom: 4,
   },
   metricLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#94A3B8',
-    marginTop: 4,
+    fontWeight: '500',
   },
   chartCard: {
     backgroundColor: 'rgba(30, 41, 59, 0.8)',

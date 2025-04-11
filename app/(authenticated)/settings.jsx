@@ -137,7 +137,6 @@ export default function Settings() {
         const daySettings = validatedSettings.days[currentDay.id];
         
         if (daySettings) {
-          console.log(`Loading sleep window for ${currentDay.label} (Day ${today}) - Bed: ${daySettings.bedtime}, Wake: ${daySettings.wakeup}`);
           // Set the enabled state for the current day
           sleepTrackingService.setCurrentDayEnabled(daySettings.enabled);
           
