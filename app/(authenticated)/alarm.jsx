@@ -6,28 +6,28 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function Alarm() {
   return (
-    <ScrollView 
+      <ScrollView 
       style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-    >
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>Alarm</Text>
-          <View style={styles.titleDecoration} />
-          <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
-        </View>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerGlow} />
+        contentContainerStyle={styles.contentContainer}
+      >
+        <View style={styles.header}>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Alarm</Text>
+            <View style={styles.titleDecoration} />
+            <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
+          </View>
+          <View style={styles.headerBackground}>
+            <View style={styles.headerGlow} />
           <View style={styles.headerParticles}>
             <View style={styles.particle} />
             <View style={styles.particle} />
             <View style={styles.particle} />
           </View>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.timeCard}>
-        <View style={styles.timeHeader}>
+        <View style={styles.timeCard}>
+          <View style={styles.timeHeader}>
           <View style={styles.timeHeaderContent}>
             <Text style={styles.timeLabel}>Wake Up Time</Text>
             <Text style={styles.timeSubtitle}>Set your morning alarm</Text>
@@ -35,8 +35,8 @@ export default function Alarm() {
           <View style={styles.timeIconContainer}>
             <BellRing size={24} color="#3B82F6" />
           </View>
-        </View>
-        
+          </View>
+          
         <View style={styles.timeDisplay}>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>07:30</Text>
@@ -58,13 +58,13 @@ export default function Alarm() {
             <Text style={styles.alarmButtonText}>Set Alarm</Text>
           </TouchableOpacity>
         </View>
-      </View>
+            </View>
 
       <View style={styles.sleepInfoCard}>
         <View style={styles.sleepInfoHeader}>
           <View style={styles.sleepInfoTitleContainer}>
-            <Text style={styles.sleepInfoTitle}>AI Sleep Schedule</Text>
-            <Text style={styles.sleepInfoSubtitle}>Adapts to your actual sleep patterns</Text>
+            <Text style={styles.sleepInfoTitle}>Sleep Tracking</Text>
+            <Text style={styles.sleepInfoSubtitle}>Your sleep patterns</Text>
           </View>
           <View style={styles.sleepInfoIconContainer}>
             <Brain size={24} color="#3B82F6" />
@@ -75,7 +75,7 @@ export default function Alarm() {
             <View style={styles.sleepTimeItem}>
               <View style={styles.sleepTimeIconContainer}>
                 <Moon size={20} color="#94A3B8" />
-              </View>
+            </View>
               <View style={styles.sleepTimeTextContainer}>
                 <Text style={styles.sleepTimeLabel}>Bedtime</Text>
                 <Text style={styles.sleepTimeValue}>23:00</Text>
@@ -94,19 +94,8 @@ export default function Alarm() {
               </View>
             </View>
           </View>
-          <View style={styles.sleepDurationContainer}>
-            <View style={styles.sleepDurationHeader}>
-              <Text style={styles.sleepDurationLabel}>Recommended Sleep Duration</Text>
-              <View style={styles.aiBadge}>
-                <Sparkles size={12} color="#3B82F6" />
-                <Text style={styles.aiBadgeText}>AI</Text>
-              </View>
-            </View>
-            <Text style={styles.sleepDurationValue}>8h 30m</Text>
-            <Text style={styles.sleepDurationNote}>Calculated from your sleep quality data</Text>
-          </View>
         </View>
-      </View>
+            </View>
     </ScrollView>
   );
 }

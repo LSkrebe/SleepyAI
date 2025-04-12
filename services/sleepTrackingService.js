@@ -307,7 +307,6 @@ Analyze the following sleep data and provide:
    - Count the number of complete sleep cycles
    - A cycle is counted when sleep quality transitions from high to low and back to high
 3. A recommendation for the sleep window if needed
-4. Sleep insights based on the data (2-3 shorter length, unique insights)
 
 Rules for sleep quality scoring:
 - Score based on:
@@ -327,12 +326,8 @@ Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
-Rules for sleep insights:
-- Provide 2-3 shorter length, creative insights based on the data
-- Make insights actionable with clear suggestions
-
 Expected format (exactly like this, no extra characters):
-{"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"insights":["insight 1","insight 2","insight 3"]}`
+{"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"}}`
           }, {
             role: "user",
             content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
@@ -382,11 +377,10 @@ ${this.sleepData.map(point =>
         });
       }
       
-      // Emit event with sleep quality scores and insights
+      // Emit event with sleep quality scores
       this.eventEmitter.emit('sleepQualityUpdate', {
         scores: analysis.scores,
         cycles: analysis.cycles,
-        insights: analysis.insights || [],
         environmental: environmentalData,
         sleepDuration: totalMinutes
       });

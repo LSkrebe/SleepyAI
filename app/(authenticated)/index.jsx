@@ -583,46 +583,7 @@ export default function Journal() {
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.insightsCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.insightsHeaderContent}>
-            <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
-            <Text style={styles.insightsSubtitle}>Your recommendations</Text>
-          </View>
-          <View style={styles.insightsIconContainer}>
-            <Brain size={28} color="#3B82F6" />
-          </View>
-        </View>
-        <View style={styles.insightsContainer}>
-          {sleepInsights.length > 0 ? (
-            sleepInsights.map((insight, index) => (
-              <View key={index} style={styles.insightItem}>
-                <View style={[
-                  styles.insightIconContainer,
-                  index === 0 && styles.insightIconContainerTimer,
-                  index === 1 && styles.insightIconContainerThermometer,
-                  index === 2 && styles.insightIconContainerSun
-                ]}>
-                  {index === 0 ? (
-                    <Brain size={20} color="#3B82F6" />
-                  ) : index === 1 ? (
-                    <Activity size={20} color="#3B82F6" />
-                  ) : (
-                    <BellRing size={20} color="#3B82F6" />
-                  )}
-                </View>
-                <View style={styles.insightContent}>
-                  <Text style={styles.insightText}>{insight}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No insights available yet</Text>
-          )}
-        </View>
-      </Animated.View>
-
-      <Animated.View style={[styles.card, styles.alarmCard, { transform: [{ translateY: slideUpAnim5 }] }]}>
+      <Animated.View style={[styles.card, styles.alarmCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
