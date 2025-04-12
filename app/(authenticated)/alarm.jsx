@@ -63,8 +63,8 @@ export default function Alarm() {
       <View style={styles.sleepInfoCard}>
         <View style={styles.sleepInfoHeader}>
           <View style={styles.sleepInfoTitleContainer}>
-            <Text style={styles.sleepInfoTitle}>Sleep Tracking</Text>
-            <Text style={styles.sleepInfoSubtitle}>Your usual sleep patterns</Text>
+            <Text style={styles.sleepInfoTitle}>AI Sleep Schedule</Text>
+            <Text style={styles.sleepInfoSubtitle}>Adapts to your actual sleep patterns</Text>
           </View>
           <View style={styles.sleepInfoIconContainer}>
             <Brain size={24} color="#3B82F6" />
@@ -72,47 +72,38 @@ export default function Alarm() {
         </View>
         <View style={styles.sleepInfoContent}>
           <View style={styles.sleepTimeContainer}>
-            <View style={styles.sleepTimeHeader}>
-              <Text style={styles.sleepTimeLabel}>Sleep Schedule</Text>
-              <View style={styles.aiBadge}>
-                <Sparkles size={12} color="#3B82F6" />
-                <Text style={styles.aiBadgeText}>AI</Text>
+            <View style={styles.sleepTimeItem}>
+              <View style={styles.sleepTimeIconContainer}>
+                <Moon size={20} color="#94A3B8" />
+              </View>
+              <View style={styles.sleepTimeTextContainer}>
+                <Text style={styles.sleepTimeLabel}>Bedtime</Text>
+                <Text style={styles.sleepTimeValue}>23:00</Text>
+                <Text style={styles.sleepTimeNote}>Based on your sleep patterns</Text>
               </View>
             </View>
-            <View style={styles.sleepTimeContent}>
-              <View style={styles.sleepTimeItem}>
-                <View style={styles.sleepTimeIconContainer}>
-                  <Moon size={20} color="#94A3B8" />
-                </View>
-                <View style={styles.sleepTimeTextContainer}>
-                  <Text style={styles.sleepTimeValue}>23:00</Text>
-                  <Text style={styles.sleepTimeNote}>Bedtime</Text>
-                </View>
+            <View style={styles.sleepTimeDivider} />
+            <View style={styles.sleepTimeItem}>
+              <View style={styles.sleepTimeIconContainer}>
+                <Sun size={20} color="#94A3B8" />
               </View>
-              <View style={styles.sleepTimeDivider} />
-              <View style={styles.sleepTimeItem}>
-                <View style={styles.sleepTimeIconContainer}>
-                  <Sun size={20} color="#94A3B8" />
-                </View>
-                <View style={styles.sleepTimeTextContainer}>
-                  <Text style={styles.sleepTimeValue}>07:30</Text>
-                  <Text style={styles.sleepTimeNote}>Wake up</Text>
-                </View>
+              <View style={styles.sleepTimeTextContainer}>
+                <Text style={styles.sleepTimeLabel}>Wake up</Text>
+                <Text style={styles.sleepTimeValue}>07:30</Text>
+                <Text style={styles.sleepTimeNote}>Optimized for your sleep cycles</Text>
               </View>
             </View>
           </View>
           <View style={styles.sleepDurationContainer}>
             <View style={styles.sleepDurationHeader}>
-              <Text style={styles.sleepDurationLabel}>Sleep Duration</Text>
+              <Text style={styles.sleepDurationLabel}>Recommended Sleep Duration</Text>
               <View style={styles.aiBadge}>
                 <Sparkles size={12} color="#3B82F6" />
                 <Text style={styles.aiBadgeText}>AI</Text>
               </View>
             </View>
-            <View style={styles.sleepDurationContent}>
-              <Text style={styles.sleepDurationValue}>8h 30m</Text>
-              <Text style={styles.sleepDurationNote}>Calculated from your sleep quality data</Text>
-            </View>
+            <Text style={styles.sleepDurationValue}>8h 30m</Text>
+            <Text style={styles.sleepDurationNote}>Calculated from your sleep quality data</Text>
           </View>
         </View>
       </View>
@@ -355,27 +346,20 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   sleepTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(51, 65, 85, 0.4)',
   },
-  sleepTimeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sleepTimeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
   sleepTimeItem: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   sleepTimeIconContainer: {
     width: 36,
@@ -388,7 +372,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(51, 65, 85, 0.4)',
   },
   sleepTimeTextContainer: {
-    alignItems: 'center',
+    flex: 1,
+  },
+  sleepTimeLabel: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 2,
   },
   sleepTimeValue: {
     fontSize: 20,
@@ -399,11 +388,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748B',
     marginTop: 2,
+    fontStyle: 'italic',
   },
   sleepTimeDivider: {
     width: 1,
     height: 40,
     backgroundColor: 'rgba(51, 65, 85, 0.4)',
+    marginHorizontal: 16,
   },
   sleepDurationContainer: {
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
@@ -411,15 +402,19 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(51, 65, 85, 0.4)',
+    alignItems: 'center',
   },
   sleepDurationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
-  sleepDurationContent: {
-    alignItems: 'center',
+  sleepDurationLabel: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 4,
   },
   sleepDurationValue: {
     fontSize: 24,
@@ -451,13 +446,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#3B82F6',
     textTransform: 'uppercase',
-  },
-  sleepTimeLabel: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
-  sleepDurationLabel: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
+  }
 }); 

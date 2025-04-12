@@ -307,7 +307,7 @@ Analyze the following sleep data and provide:
    - Count the number of complete sleep cycles
    - A cycle is counted when sleep quality transitions from high to low and back to high
 3. A recommendation for the sleep window if needed
-4. Sleep insights based on the data (2-3 normal length, unique insights)
+4. Sleep insights based on the data (2-3 shorter length, unique insights)
 
 Rules for sleep quality scoring:
 - Score based on:
@@ -328,7 +328,7 @@ Rules for sleep window recommendation:
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
 Rules for sleep insights:
-- Provide 2-3 normal length, creative insights based on the data
+- Provide 2-3 shorter length, creative insights based on the data
 - Make insights actionable with clear suggestions
 
 Expected format (exactly like this, no extra characters):

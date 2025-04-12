@@ -504,7 +504,36 @@ export default function Journal() {
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.environmentCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
+      <Animated.View style={[styles.card, styles.cyclesCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.insightsHeaderContent}>
+            <Text style={[styles.cardTitle, styles.cyclesTitle]}>Sleep Cycles</Text>
+            <Text style={styles.insightsSubtitle}>Your sleep stages</Text>
+          </View>
+          <View style={styles.todayIconContainer}>
+            <Timer size={28} color="#3B82F6" />
+          </View>
+        </View>
+        <View style={styles.cyclesContainer}>
+          <View style={styles.cycleItem}>
+            <View style={styles.cycleValueContainer}>
+              <Text style={styles.cycleValue}>{sleepCycles}</Text>
+              <Text style={styles.cycleUnit}>cycles</Text>
+            </View>
+            <Text style={styles.cycleLabel}>Total Cycles</Text>
+          </View>
+          <View style={styles.cycleDivider} />
+          <View style={styles.cycleItem}>
+            <View style={styles.cycleValueContainer}>
+              <Text style={styles.cycleValue}>{cycleDuration}</Text>
+              <Text style={styles.cycleUnit}>min</Text>
+            </View>
+            <Text style={styles.cycleLabel}>Avg Duration</Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[styles.card, styles.environmentCard, { transform: [{ translateY: slideUpAnim3 }] }]}>
         <View style={styles.cardHeader}>
           <View style={styles.environmentHeaderContent}>
             <Text style={[styles.cardTitle, styles.environmentTitle]}>Sleep Environment</Text>
@@ -554,35 +583,6 @@ export default function Journal() {
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.cyclesCard, { transform: [{ translateY: slideUpAnim3 }] }]}>
-        <View style={styles.cardHeader}>
-          <View style={styles.insightsHeaderContent}>
-            <Text style={[styles.cardTitle, styles.cyclesTitle]}>Sleep Cycles</Text>
-            <Text style={styles.insightsSubtitle}>Your sleep stages</Text>
-          </View>
-          <View style={styles.todayIconContainer}>
-            <Timer size={28} color="#3B82F6" />
-          </View>
-        </View>
-        <View style={styles.cyclesContainer}>
-          <View style={styles.cycleItem}>
-            <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>{sleepCycles}</Text>
-              <Text style={styles.cycleUnit}>cycles</Text>
-            </View>
-            <Text style={styles.cycleLabel}>Total Cycles</Text>
-          </View>
-          <View style={styles.cycleDivider} />
-          <View style={styles.cycleItem}>
-            <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>{cycleDuration}</Text>
-              <Text style={styles.cycleUnit}>min</Text>
-            </View>
-            <Text style={styles.cycleLabel}>Avg Duration</Text>
-          </View>
-        </View>
-      </Animated.View>
-
       <Animated.View style={[styles.card, styles.insightsCard, { transform: [{ translateY: slideUpAnim4 }] }]}>
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
@@ -604,11 +604,11 @@ export default function Journal() {
                   index === 2 && styles.insightIconContainerSun
                 ]}>
                   {index === 0 ? (
-                    <Brain size={20} color="#84CC16" />
+                    <Brain size={20} color="#3B82F6" />
                   ) : index === 1 ? (
-                    <Activity size={20} color="#EC4899" />
+                    <Activity size={20} color="#3B82F6" />
                   ) : (
-                    <BellRing size={20} color="#0EA5E9" />
+                    <BellRing size={20} color="#3B82F6" />
                   )}
                 </View>
                 <View style={styles.insightContent}>
@@ -736,7 +736,7 @@ const styles = StyleSheet.create({
   },
   todayCard: {
     marginTop: 0,
-    borderColor: '#3B82F6',
+    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1146,15 +1146,15 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   insightIconContainerTimer: {
-    backgroundColor: 'rgba(132, 204, 22, 0.15)',
-    borderColor: 'rgba(132, 204, 22, 0.3)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   insightIconContainerThermometer: {
-    backgroundColor: 'rgba(236, 72, 153, 0.15)',
-    borderColor: 'rgba(236, 72, 153, 0.3)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   insightIconContainerSun: {
-    backgroundColor: 'rgba(14, 165, 233, 0.15)',
-    borderColor: 'rgba(14, 165, 233, 0.3)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
 }); 
