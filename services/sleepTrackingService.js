@@ -396,8 +396,13 @@ ${this.sleepData.map(point =>
         date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
         duration: totalMinutes,
         quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
-        environmental: environmentalAverages,
-        cycles: analysis.cycles.count
+        cycles: analysis.cycles.count,
+        environmental: {
+          temperature: environmentalAverages.temperature,
+          humidity: environmentalAverages.humidity,
+          noise: environmentalAverages.noise,
+          light: environmentalAverages.light
+        }
       };
 
       // Save to AsyncStorage
