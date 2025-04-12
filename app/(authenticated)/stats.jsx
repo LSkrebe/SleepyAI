@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer, ArrowUp, ArrowDown, Minus } from 'lucide-react-native';
+import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer, ArrowUp, ArrowDown, Minus, Droplets } from 'lucide-react-native';
 import sleepTrackingService from '../../services/sleepTrackingService';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -68,10 +68,10 @@ const staticData = {
   const chartConfigs = {
     sleepQuality: {
       ...baseChartConfig,
-      color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+      color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`,
       propsForDots: {
         ...baseChartConfig.propsForDots,
-        stroke: '#3B82F6',
+        stroke: '#06B6D4',
       },
     },
     lightLevel: {
@@ -84,18 +84,18 @@ const staticData = {
     },
     noiseLevel: {
       ...baseChartConfig,
-      color: (opacity = 1) => `rgba(139, 92, 246, ${opacity})`,
+      color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
       propsForDots: {
         ...baseChartConfig.propsForDots,
-        stroke: '#8B5CF6',
+        stroke: '#6366F1',
       },
     },
     temperature: {
       ...baseChartConfig,
-      color: (opacity = 1) => `rgba(239, 68, 68, ${opacity})`,
+      color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
       propsForDots: {
         ...baseChartConfig.propsForDots,
-        stroke: '#EF4444',
+        stroke: '#EC4899',
       },
     },
     humidity: {
@@ -108,10 +108,10 @@ const staticData = {
     },
     avgDuration: {
       ...baseChartConfig,
-      color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
+      color: (opacity = 1) => `rgba(132, 204, 22, ${opacity})`,
       propsForDots: {
         ...baseChartConfig.propsForDots,
-        stroke: '#EC4899',
+        stroke: '#84CC16',
       },
       formatYLabel: (value) => {
         const [hours, minutes] = value.toString().split('.');
@@ -121,10 +121,10 @@ const staticData = {
     },
     sleepCycles: {
       ...baseChartConfig,
-      color: (opacity = 1) => `rgba(234, 179, 8, ${opacity})`,
+      color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
       propsForDots: {
         ...baseChartConfig.propsForDots,
-        stroke: '#EAB308',
+        stroke: '#F97316',
       },
     },
   };
@@ -161,11 +161,11 @@ const TrendIndicator = ({ currentValue, previousValue, inverted = false, optimal
   return (
     <View style={styles.trendContainer}>
       {isNeutral ? (
-        <Minus size={16} color="#94A3B8" />
+        <Minus size={16} color="#CBD5E1" />
       ) : isPositive ? (
-        <ArrowUp size={16} color={isGood ? "#10B981" : "#EF4444"} />
+        <ArrowUp size={16} color={isGood ? "#22C55E" : "#F43F5E"} />
       ) : (
-        <ArrowDown size={16} color={isGood ? "#10B981" : "#EF4444"} />
+        <ArrowDown size={16} color={isGood ? "#22C55E" : "#F43F5E"} />
       )}
       <Text style={[
         styles.trendText,
@@ -443,7 +443,7 @@ export default function Stats() {
     >
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Sleep Statistics</Text>
+          <Text style={styles.title}>Statistics</Text>
           <View style={styles.titleDecoration} />
           <Text style={styles.subtitle}>Track your sleep patterns</Text>
         </View>
@@ -455,14 +455,14 @@ export default function Stats() {
       <View style={styles.metricsGrid}>
         <View style={[styles.metricCard, styles.metricCardSleepQuality]}>
           <View style={styles.metricIconContainer}>
-            <Activity size={24} color="#3B82F6" />
+            <Activity size={24} color="#06B6D4" />
           </View>
           <Text style={styles.metricValue}>{averages.sleepQuality}%</Text>
           <Text style={styles.metricLabel}>Avg. Quality</Text>
         </View>
         <View style={[styles.metricCard, styles.metricCardDuration]}>
           <View style={styles.metricIconContainer}>
-            <Clock size={24} color="#EC4899" />
+            <Clock size={24} color="#84CC16" />
           </View>
           <Text style={styles.metricValue}>{averages.sleepDuration}</Text>
           <Text style={styles.metricLabel}>Avg. Duration</Text>
@@ -472,7 +472,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
+          <Activity size={24} color="#06B6D4" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Quality (%)</Text>
           </View>
           <TrendIndicator {...trends.sleepQuality} />
@@ -493,7 +493,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Clock size={24} color="#EC4899" style={styles.chartIcon} />
+          <Clock size={24} color="#84CC16" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Duration (h)</Text>
           </View>
           <TrendIndicator {...trends.avgDuration} />
@@ -514,7 +514,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Sun size={24} color="#EAB308" style={styles.chartIcon} />
+          <Sun size={24} color="#F97316" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Cycles (count)</Text>
           </View>
           <TrendIndicator {...trends.sleepCycles} />
@@ -535,7 +535,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
+          <Volume2 size={24} color="#6366F1" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Ambient Noise (dB)</Text>
           </View>
           <TrendIndicator {...trends.noiseLevel} inverted={true} />
@@ -577,7 +577,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
+          <Thermometer size={24} color="#EC4899" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Temperature (°C)</Text>
           </View>
           <TrendIndicator {...trends.temperature} />
@@ -598,7 +598,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
+          <Droplets size={24} color="#0EA5E9" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Humidity (%)</Text>
           </View>
           <TrendIndicator {...trends.humidity} />
@@ -695,11 +695,11 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
   },
   metricCardSleepQuality: {
-    borderColor: '#3B82F6',
+    borderColor: '#06B6D4',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
   },
   metricCardDuration: {
-    borderColor: '#EC4899',
+    borderColor: '#84CC16',
     backgroundColor: 'rgba(30, 41, 59, 0.8)',
   },
   metricIconContainer: {
@@ -810,20 +810,20 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   metricItemTemperature: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderColor: '#EF4444',
+    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+    borderColor: 'rgba(236, 72, 153, 0.2)',
   },
   metricItemHumidity: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderColor: '#0EA5E9',
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderColor: 'rgba(14, 165, 233, 0.2)',
   },
   metricItemNoise: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderColor: '#8B5CF6',
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderColor: 'rgba(99, 102, 241, 0.2)',
   },
   metricItemLight: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderColor: '#F59E0B',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   trendContainer: {
     flexDirection: 'row',
@@ -841,13 +841,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   trendTextPositive: {
-    color: '#10B981',
+    color: '#22C55E',
   },
   trendTextNegative: {
-    color: '#EF4444',
+    color: '#F43F5E',
   },
   trendTextNeutral: {
-    color: '#94A3B8',
+    color: '#CBD5E1',
   },
   chartTarget: {
     fontSize: 14,
