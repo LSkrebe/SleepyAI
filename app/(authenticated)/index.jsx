@@ -394,11 +394,11 @@ export default function Journal() {
       borderRadius: 16,
     },
     propsForLabels: {
-      fontSize: Math.min(10, screenWidth / 40),
+      fontSize: Math.min(12, screenWidth / 35),
       fill: '#94A3B8',
     },
     propsForDots: {
-      r: '5',
+      r: '4',
       strokeWidth: '2',
       stroke: '#E2E8F0',
     },
@@ -406,7 +406,7 @@ export default function Journal() {
       strokeDasharray: '3,3',
       stroke: '#334155',
     },
-    paddingLeft: 15,
+    paddingLeft: -30,
     paddingRight: 15,
   };
 
@@ -442,9 +442,6 @@ export default function Journal() {
           <View style={styles.titleDecoration} />
           <Text style={styles.subtitle}>Your personal sleep companion</Text>
         </View>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerGlow} />
-        </View>
       </Animated.View>
 
       <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }] }]}>
@@ -470,16 +467,18 @@ export default function Journal() {
         <View style={styles.sleepStats}>
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepDuration}</Text>
-              <View style={styles.statValueUnderline} />
+              <Text style={styles.statValue}>{sleepDuration.split(' ')[0].replace('h', '')}</Text>
+              <Text style={styles.statUnit}>h</Text>
+              <Text style={[styles.statValue, { marginLeft: 8 }]}>{sleepDuration.split(' ')[1].replace('m', '')}</Text>
+              <Text style={styles.statUnit}>m</Text>
             </View>
             <Text style={styles.statLabel}>Sleep Duration</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepQuality}%</Text>
-              <View style={styles.statValueUnderline} />
+              <Text style={styles.statValue}>{sleepQuality}</Text>
+              <Text style={styles.statUnit}>%</Text>
             </View>
             <Text style={styles.statLabel}>Sleep Quality</Text>
           </View>
@@ -586,7 +585,7 @@ export default function Journal() {
             <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
             <Text style={styles.insightsSubtitle}>Personalized recommendations</Text>
           </View>
-          <View style={styles.todayIconContainer}>
+          <View style={styles.insightsIconContainer}>
             <Brain size={28} color="#3B82F6" />
           </View>
         </View>
@@ -594,13 +593,18 @@ export default function Journal() {
           {sleepInsights.length > 0 ? (
             sleepInsights.map((insight, index) => (
               <View key={index} style={styles.insightItem}>
-                <View style={styles.insightIconContainer}>
+                <View style={[
+                  styles.insightIconContainer,
+                  index === 0 && styles.insightIconContainerTimer,
+                  index === 1 && styles.insightIconContainerThermometer,
+                  index === 2 && styles.insightIconContainerSun
+                ]}>
                   {index === 0 ? (
-                    <Timer size={20} color="#3B82F6" />
+                    <Timer size={20} color="#22C55E" />
                   ) : index === 1 ? (
-                    <Thermometer size={20} color="#3B82F6" />
+                    <Thermometer size={20} color="#EF4444" />
                   ) : (
-                    <Sun size={20} color="#3B82F6" />
+                    <Sun size={20} color="#F59E0B" />
                   )}
                 </View>
                 <View style={styles.insightContent}>
@@ -660,42 +664,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   contentContainer: {
-    paddingBottom: 50, // Reduced padding to prevent navbar clipping
+    paddingBottom: 64,
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 48,
+    paddingBottom: 32,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  headerBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1,
-  },
-  headerGlow: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 200,
-    height: 200,
-    backgroundColor: '#3B82F6',
-    borderRadius: 100,
-    opacity: 0.1,
-    transform: [{ scale: 1.5 }],
   },
   titleContainer: {
-    position: 'relative',
-    zIndex: 2,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 48,
-    fontWeight: '900',
+    fontSize: 42,
+    fontWeight: '800',
     color: '#E2E8F0',
     letterSpacing: 1,
     textShadowColor: 'rgba(59, 130, 246, 0.5)',
@@ -716,205 +698,72 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 12,
     letterSpacing: 0.5,
-    fontWeight: '500',
   },
   card: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderRadius: 12,
+    padding: 16,
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+  },
+  todayCard: {
+    borderColor: '#3B82F6',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginLeft: 8,
     color: '#E2E8F0',
   },
   sleepStats: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingHorizontal: 8
   },
   statItem: {
-    flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    flex: 1,
   },
-  statDivider: {
-    width: 1,
-    height: 50,
-    backgroundColor: '#334155',
-    marginHorizontal: 16,
+  statValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
   },
   statValue: {
     fontSize: 32,
-    fontWeight: '800',
-    color: '#E2E8F0',
-  },
-  statLabel: {
-    fontSize: 16,
-    color: '#94A3B8',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-  statValueContainer: {
-    alignItems: 'center',
-  },
-  statValueUnderline: {
-    width: 50,
-    height: 2,
-    backgroundColor: '#3B82F6',
-    marginTop: 6,
-    borderRadius: 1,
-  },
-  insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  insightIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  insightContent: {
-    flex: 1,
-    paddingTop: 4,
-  },
-  insightText: {
-    fontSize: 14,
-    color: '#E2E8F0',
-    lineHeight: 20,
-  },
-  alarmCard: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  alarmIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  alarmHeaderContent: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  alarmTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
-  },
-  alarmEdit: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  alarmContent: {
-    padding: 16,
-    alignItems: 'center',
-  },
-  alarmTimeContainer: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  alarmTime: {
-    fontSize: 48,
     fontWeight: '700',
     color: '#E2E8F0',
-    marginBottom: 8,
   },
-  alarmStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  alarmStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  alarmStatus: {
-    fontSize: 14,
+  statUnit: {
+    fontSize: 16,
     color: '#94A3B8',
+    marginLeft: 4,
   },
-  alarmCountdown: {
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderRadius: 8,
-    width: '100%',
-  },
-  timeUntilAlarm: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#3B82F6',
-  },
-  countdownLabel: {
-    fontSize: 12,
+  statLabel: {
+    fontSize: 14,
     color: '#94A3B8',
     marginTop: 4,
   },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+  },
   chartCard: {
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#334155',
-    padding: 24,
-  },
-  chartTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
+    overflow: 'hidden',
   },
   chartContainer: {
     marginVertical: 8,
@@ -932,16 +781,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     width: '100%',
-    overflow: 'hidden',
+    overflow: 'hidden'
   },
   chart: {
     marginVertical: 4,
     marginLeft: -20,
-    borderRadius: 16,
+    borderRadius: 8,
     alignSelf: 'center',
   },
   metricsContainer: {
-    marginTop: 24,
+    marginTop: 16,
   },
   metricsHeader: {
     marginBottom: 16,
@@ -954,58 +803,33 @@ const styles = StyleSheet.create({
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 8,
   },
   metricItem: {
     flex: 1,
     minWidth: '45%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 8,
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
+    padding: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   metricIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 6,
-  },
-  metricItemTemperature: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderColor: '#EF4444',
-  },
-  metricItemHumidity: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderColor: '#0EA5E9',
-  },
-  metricItemNoise: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderColor: '#8B5CF6',
-  },
-  metricItemLight: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderColor: '#F59E0B',
+    marginRight: 8,
   },
   metricContent: {
     flex: 1,
-    paddingRight: 2,
   },
   metricValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#E2E8F0',
   },
   metricLabel: {
@@ -1013,90 +837,85 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  cyclesCard: {
-    borderWidth: 1,
-    borderColor: '#334155',
-    padding: 24,
-  },
-  cyclesTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
-  },
   cyclesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginTop: 16,
   },
   cycleItem: {
     alignItems: 'center',
     flex: 1,
   },
-  cycleValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
   cycleValue: {
-    fontSize: 36,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '700',
     color: '#E2E8F0',
-  },
-  cycleUnit: {
-    fontSize: 16,
-    color: '#94A3B8',
-    marginLeft: 4,
   },
   cycleLabel: {
     fontSize: 14,
     color: '#94A3B8',
-    marginTop: 8,
-  },
-  cycleDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#334155',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#334155',
-    marginVertical: 16,
-  },
-  insightsCard: {
-    borderWidth: 1,
-    borderColor: '#3B82F6',
-    padding: 24,
-  },
-  insightsHeaderContent: {
-    flex: 1,
-    marginLeft: 0,
-  },
-  insightsTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
-  },
-  insightsSubtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 2,
-    marginLeft: 0,
+    marginTop: 4,
   },
   insightsContainer: {
-    marginTop: 16,
-    gap: 16,
+    gap: 12,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+  },
+  insightIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightText: {
+    fontSize: 14,
+    color: '#E2E8F0',
+    lineHeight: 20,
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
+    color: '#94A3B8',
     fontStyle: 'italic',
+    textAlign: 'center',
   },
-  todayCard: {
+  alarmContent: {
+    alignItems: 'center',
+  },
+  alarmTime: {
+    fontSize: 40,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    marginBottom: 4,
+  },
+  alarmStatus: {
+    fontSize: 14,
+    color: '#94A3B8',
+  },
+  alarmEditButton: {
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#3B82F6',
-    padding: 24,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+  },
+  alarmEditText: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
   todayHeaderContent: {
     flex: 1,
@@ -1124,20 +943,90 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cyclesIconContainer: undefined,
-  chartIconContainer: undefined,
-  alarmIconContainer: undefined,
-  alarmEditButton: {
-    marginTop: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  cyclesCard: undefined,
+  cyclesTitle: {
+    fontSize: 22,
+    color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
+  },
+  cycleValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  cycleUnit: {
+    fontSize: 16,
+    color: '#94A3B8',
+    marginLeft: 4,
+  },
+  cycleDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+  },
+  chartCard: undefined,
+  chartTitle: {
+    fontSize: 22,
+    color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
+  },
+  insightsCard: undefined,
+  insightsHeaderContent: {
+    flex: 1,
+  },
+  insightsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
+  },
+  insightsTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  insightsSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  alarmCard: undefined,
+  alarmTimeContainer: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  alarmStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alarmStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  alarmCountdown: {
+    alignItems: 'center',
+    padding: 12,
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     borderRadius: 8,
-    alignItems: 'center',
+    width: '100%',
   },
-  alarmEditText: {
-    fontSize: 14,
+  timeUntilAlarm: {
+    fontSize: 24,
+    fontWeight: '600',
     color: '#3B82F6',
-    fontWeight: '500',
   },
+  countdownLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  alarmIconContainer: undefined,
+  alarmEditButton: undefined,
 }); 

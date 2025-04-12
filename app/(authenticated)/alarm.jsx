@@ -1,399 +1,145 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Dimensions, TextInput } from 'react-native';
-import { BellRing, Moon, Sun, ChevronDown, X } from 'lucide-react-native';
-import { Audio } from 'expo-av';
-import { useAlarm } from '../../context/AlarmContext';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { BellRing, ChevronDown, Clock, Sun, Moon, Sparkles, Zap, Target, Brain } from 'lucide-react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function Alarm() {
-  const { alarmTime, setAlarmTime, isAlarmActive, setIsAlarmActive } = useAlarm();
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [selectedDays, setSelectedDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
-  const [customHours, setCustomHours] = useState('');
-  const [customMinutes, setCustomMinutes] = useState('');
-  const [showAlarmModal, setShowAlarmModal] = useState(false);
-  const [sound, setSound] = useState(null);
-  const [snoozeTimeout, setSnoozeTimeout] = useState(null);
-  const [alarmTimeout, setAlarmTimeout] = useState(null);
-  
-  const workDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const weekendDays = ['Sat', 'Sun'];
-  const allDays = [...workDays, ...weekendDays];
-
-  useEffect(() => {
-    // Initialize audio
-    async function setupAudio() {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-        });
-
-        const { sound } = await Audio.Sound.createAsync(
-          require('../../assets/alarm.mp3'),
-          { isLooping: true }
-        );
-        setSound(sound);
-      } catch (error) {
-        console.error('Error setting up audio:', error);
-      }
-    }
-
-    setupAudio();
-
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-      if (snoozeTimeout) {
-        clearTimeout(snoozeTimeout);
-      }
-      if (alarmTimeout) {
-        clearTimeout(alarmTimeout);
-      }
-    };
-  }, []);
-
-  const toggleDay = (day) => {
-    if (selectedDays.includes(day)) {
-      setSelectedDays(selectedDays.filter(d => d !== day));
-    } else {
-      setSelectedDays([...selectedDays, day]);
-    }
-  };
-
-  const handleTimeSelection = (time) => {
-    setAlarmTime(time);
-    setShowTimePicker(false);
-  };
-
-  const handleCustomTimeSubmit = () => {
-    const hours = parseInt(customHours);
-    const minutes = parseInt(customMinutes);
-    
-    if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      setAlarmTime(formattedTime);
-      setShowTimePicker(false);
-    }
-  };
-
-  const scheduleAlarm = () => {
-    // Clear any existing alarm
-    if (alarmTimeout) {
-      clearTimeout(alarmTimeout);
-    }
-
-    const [hours, minutes] = alarmTime.split(':').map(Number);
-    const now = new Date();
-    const alarmTime = new Date(now);
-    alarmTime.setHours(hours, minutes, 0, 0);
-
-    // If the alarm time is in the past, set it for tomorrow
-    if (alarmTime < now) {
-      alarmTime.setDate(alarmTime.getDate() + 1);
-    }
-
-    const timeUntilAlarm = alarmTime.getTime() - now.getTime();
-    
-    const timeout = setTimeout(async () => {
-      setShowAlarmModal(true);
-      if (sound) {
-        try {
-          await sound.playAsync();
-        } catch (error) {
-          console.error('Error playing sound:', error);
-        }
-      }
-    }, timeUntilAlarm);
-
-    setAlarmTimeout(timeout);
-    setIsAlarmActive(true);
-  };
-
-  const toggleAlarm = async () => {
-    if (!isAlarmActive) {
-      scheduleAlarm();
-    } else {
-      stopAlarm();
-    }
-  };
-
-  const stopAlarm = async () => {
-    if (sound) {
-      try {
-        await sound.stopAsync();
-        await sound.setPositionAsync(0);
-      } catch (error) {
-        console.error('Error stopping sound:', error);
-      }
-    }
-    setShowAlarmModal(false);
-    setIsAlarmActive(false);
-    if (snoozeTimeout) {
-      clearTimeout(snoozeTimeout);
-      setSnoozeTimeout(null);
-    }
-    if (alarmTimeout) {
-      clearTimeout(alarmTimeout);
-      setAlarmTimeout(null);
-    }
-  };
-
-  const snoozeAlarm = async () => {
-    if (sound) {
-      try {
-        await sound.stopAsync();
-        await sound.setPositionAsync(0);
-      } catch (error) {
-        console.error('Error stopping sound:', error);
-      }
-    }
-    setShowAlarmModal(false);
-    
-    // Set snooze timeout for 5 minutes
-    const timeout = setTimeout(async () => {
-      setShowAlarmModal(true);
-      if (sound) {
-        try {
-          await sound.playAsync();
-        } catch (error) {
-          console.error('Error playing sound:', error);
-        }
-      }
-    }, 5 * 60 * 1000); // 5 minutes in milliseconds
-    
-    setSnoozeTimeout(timeout);
-  };
-
-  const getSortedDays = () => {
-    return selectedDays.sort((a, b) => allDays.indexOf(a) - allDays.indexOf(b));
-  };
-
-  const openTimePicker = () => {
-    const [hours, minutes] = alarmTime.split(':');
-    setCustomHours(hours);
-    setCustomMinutes(minutes);
-    setShowTimePicker(true);
-  };
-
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Alarm</Text>
-            <View style={styles.titleDecoration} />
-            <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
-          </View>
-          <View style={styles.headerBackground}>
-            <View style={styles.headerGlow} />
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Alarm</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
+        </View>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+          <View style={styles.headerParticles}>
+            <View style={styles.particle} />
+            <View style={styles.particle} />
+            <View style={styles.particle} />
           </View>
         </View>
+      </View>
 
-        <View style={styles.timeCard}>
-          <View style={styles.timeHeader}>
+      <View style={styles.timeCard}>
+        <View style={styles.timeHeader}>
+          <View style={styles.timeIconContainer}>
             <BellRing size={24} color="#3B82F6" />
+          </View>
+          <View style={styles.timeHeaderContent}>
             <Text style={styles.timeLabel}>Wake Up Time</Text>
+            <Text style={styles.timeSubtitle}>Set your morning alarm</Text>
           </View>
-          
-          <TouchableOpacity 
-            style={[
-              styles.timeButton,
-              isAlarmActive && styles.timeButtonDisabled
-            ]}
-            onPress={openTimePicker}
-            disabled={isAlarmActive}
-          >
-            <View style={styles.timeButtonContent}>
-              <Text style={[
-                styles.timeDisplay,
-                isAlarmActive && styles.timeDisplayDisabled
-              ]}>{alarmTime}</Text>
-              <Text style={[
-                styles.selectedDaysText,
-                isAlarmActive && styles.selectedDaysTextDisabled
-              ]}>
-                {getSortedDays().join(', ')}
-              </Text>
+        </View>
+        
+        <View style={styles.timeDisplay}>
+          <View style={styles.timeContainer}>
+            <Text style={styles.timeText}>07:30</Text>
+            <View style={styles.timeIndicator}>
+              <Sun size={16} color="#F59E0B" />
+              <Text style={styles.timeIndicatorText}>Morning</Text>
             </View>
-            {!isAlarmActive && <ChevronDown size={24} color="#94A3B8" />}
+          </View>
+          <Text style={styles.daysText}>Mon, Tue, Wed, Thu, Fri</Text>
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.editButton}>
+            <ChevronDown size={20} color="#94A3B8" />
+            <Text style={styles.editButtonText}>Edit Time</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.alarmButton,
-              isAlarmActive ? styles.alarmButtonActive : styles.alarmButtonInactive
-            ]}
-            onPress={toggleAlarm}
-          >
-            <Text style={styles.alarmButtonText}>
-              {isAlarmActive ? 'Cancel Alarm' : 'Set Alarm'}
-            </Text>
+          <TouchableOpacity style={styles.alarmButton}>
+            <Text style={styles.alarmButtonText}>Set Alarm</Text>
           </TouchableOpacity>
         </View>
+      </View>
 
-        <View style={styles.featuresRow}>
-          <View style={styles.featureCard}>
-            <View style={styles.featureHeader}>
-              <Moon size={24} color="#3B82F6" />
-              <Text style={styles.featureTitle}>Sleep Cycle</Text>
-            </View>
-            <Text style={styles.featureDescription}>
-              Wake up during light sleep for a more refreshing start to your day
-            </Text>
+      <View style={styles.sleepInfoCard}>
+        <View style={styles.sleepInfoHeader}>
+          <View style={styles.sleepInfoIconContainer}>
+            <Brain size={24} color="#3B82F6" />
           </View>
-
-          <View style={styles.featureCard}>
-            <View style={styles.featureHeader}>
-              <Sun size={24} color="#3B82F6" />
-              <Text style={styles.featureTitle}>Gentle Wake</Text>
-            </View>
-            <Text style={styles.featureDescription}>
-              Progressive alarm sound that gradually increases in volume
-            </Text>
+          <View style={styles.sleepInfoTitleContainer}>
+            <Text style={styles.sleepInfoTitle}>AI Sleep Schedule</Text>
+            <Text style={styles.sleepInfoSubtitle}>Adapts to your actual sleep patterns</Text>
           </View>
         </View>
-      </ScrollView>
-
-      <Modal
-        visible={showTimePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowTimePicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Set Alarm Time</Text>
-              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                <Text style={styles.modalClose}>Done</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.customTimeContainer}>
-              <View style={styles.customTimeInputs}>
-                <View style={styles.customTimeInputGroup}>
-                  <Text style={styles.customTimeLabel}>Hours</Text>
-                  <TextInput
-                    style={styles.customTimeInput}
-                    value={customHours}
-                    onChangeText={setCustomHours}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    placeholder="00"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
-                <View style={styles.customTimeInputGroup}>
-                  <Text style={styles.customTimeLabel}>Minutes</Text>
-                  <TextInput
-                    style={styles.customTimeInput}
-                    value={customMinutes}
-                    onChangeText={setCustomMinutes}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    placeholder="00"
-                    placeholderTextColor="#94A3B8"
-                  />
-                </View>
+        <View style={styles.sleepInfoContent}>
+          <View style={styles.sleepTimeContainer}>
+            <View style={styles.sleepTimeItem}>
+              <View style={styles.sleepTimeIconContainer}>
+                <Moon size={20} color="#94A3B8" />
+              </View>
+              <View style={styles.sleepTimeTextContainer}>
+                <Text style={styles.sleepTimeLabel}>Bedtime</Text>
+                <Text style={styles.sleepTimeValue}>23:00</Text>
+                <Text style={styles.sleepTimeNote}>Based on your sleep patterns</Text>
               </View>
             </View>
-
-            <View style={styles.daysContainer}>
-              <View style={styles.daysGrid}>
-                {workDays.map((day) => (
-                  <TouchableOpacity
-                    key={day}
-                    style={[
-                      styles.dayButton,
-                      selectedDays.includes(day) && styles.dayButtonActive,
-                    ]}
-                    onPress={() => toggleDay(day)}
-                  >
-                    <Text
-                      style={[
-                        styles.dayText,
-                        selectedDays.includes(day) && styles.dayTextActive,
-                      ]}
-                    >
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            <View style={styles.sleepTimeDivider} />
+            <View style={styles.sleepTimeItem}>
+              <View style={styles.sleepTimeIconContainer}>
+                <Sun size={20} color="#94A3B8" />
               </View>
-              <View style={styles.daysGrid}>
-                {weekendDays.map((day) => (
-                  <TouchableOpacity
-                    key={day}
-                    style={[
-                      styles.dayButton,
-                      selectedDays.includes(day) && styles.dayButtonActive,
-                    ]}
-                    onPress={() => toggleDay(day)}
-                  >
-                    <Text
-                      style={[
-                        styles.dayText,
-                        selectedDays.includes(day) && styles.dayTextActive,
-                      ]}
-                    >
-                      {day}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={styles.sleepTimeTextContainer}>
+                <Text style={styles.sleepTimeLabel}>Wake up</Text>
+                <Text style={styles.sleepTimeValue}>07:30</Text>
+                <Text style={styles.sleepTimeNote}>Optimized for your sleep cycles</Text>
               </View>
             </View>
-
-            <TouchableOpacity 
-              style={styles.customTimeSubmit}
-              onPress={handleCustomTimeSubmit}
-            >
-              <Text style={styles.customTimeSubmitText}>Set Time</Text>
-            </TouchableOpacity>
+          </View>
+          <View style={styles.sleepDurationContainer}>
+            <View style={styles.sleepDurationHeader}>
+              <Text style={styles.sleepDurationLabel}>Recommended Sleep Duration</Text>
+              <View style={styles.aiBadge}>
+                <Sparkles size={12} color="#3B82F6" />
+                <Text style={styles.aiBadgeText}>AI</Text>
+              </View>
+            </View>
+            <Text style={styles.sleepDurationValue}>8h 30m</Text>
+            <Text style={styles.sleepDurationNote}>Calculated from your sleep quality data</Text>
           </View>
         </View>
-      </Modal>
+      </View>
 
-      <Modal
-        visible={showAlarmModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={stopAlarm}
-      >
-        <View style={styles.alarmModalOverlay}>
-          <View style={styles.alarmModalContent}>
-            <View style={styles.alarmModalHeader}>
-              <Text style={styles.alarmModalTitle}>Time to Wake Up!</Text>
+      <View style={styles.insightsCard}>
+        <View style={styles.insightsHeader}>
+          <View style={styles.insightsIconContainer}>
+            <Target size={24} color="#3B82F6" />
+          </View>
+          <View style={styles.insightsTitleContainer}>
+            <Text style={styles.insightsTitle}>Sleep Insights</Text>
+            <Text style={styles.insightsSubtitle}>Your personalized recommendations</Text>
+          </View>
+        </View>
+        <View style={styles.insightsContent}>
+          <View style={styles.insightItem}>
+            <View style={styles.insightIconContainer}>
+              <Zap size={20} color="#F59E0B" />
             </View>
-            <View style={styles.alarmModalTimeContainer}>
-              <Text style={styles.alarmModalTime}>{alarmTime}</Text>
+            <View style={styles.insightTextContainer}>
+              <Text style={styles.insightTitle}>Energy Boost</Text>
+              <Text style={styles.insightDescription}>Wake up during light sleep for more energy</Text>
             </View>
-            <View style={styles.alarmModalButtons}>
-              <TouchableOpacity
-                style={[styles.alarmModalButton, styles.snoozeButton]}
-                onPress={snoozeAlarm}
-              >
-                <Text style={styles.alarmModalButtonText}>Snooze</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.alarmModalButton, styles.stopAlarmButton]}
-                onPress={stopAlarm}
-              >
-                <Text style={styles.alarmModalButtonText}>Stop</Text>
-              </TouchableOpacity>
+          </View>
+          <View style={styles.insightItem}>
+            <View style={styles.insightIconContainer}>
+              <Clock size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.insightTextContainer}>
+              <Text style={styles.insightTitle}>Sleep Consistency</Text>
+              <Text style={styles.insightDescription}>Maintain consistent sleep schedule</Text>
             </View>
           </View>
         </View>
-      </Modal>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -402,11 +148,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0F172A',
   },
+  contentContainer: {
+    paddingBottom: 50,
+  },
   header: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 40,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
+    position: 'relative',
+    overflow: 'visible',
   },
   headerBackground: {
     position: 'absolute',
@@ -427,8 +178,24 @@ const styles = StyleSheet.create({
     opacity: 0.1,
     transform: [{ scale: 1.5 }],
   },
+  headerParticles: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  particle: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
+    opacity: 0.3,
+  },
   titleContainer: {
     position: 'relative',
+    zIndex: 2,
   },
   title: {
     fontSize: 32,
@@ -449,274 +216,346 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#94A3B8',
     marginTop: 8,
-    letterSpacing: 0.3,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 50,
+    letterSpacing: 0.5,
   },
   timeCard: {
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(30, 41, 59, 1)',
+    borderRadius: 16,
+    padding: 24,
     margin: 16,
     borderWidth: 1,
     borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   timeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  timeIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  timeHeaderContent: {
+    flex: 1,
   },
   timeLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: '#E2E8F0',
-    marginLeft: 8,
   },
-  timeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  timeButtonContent: {
-    flex: 1,
+  timeSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   timeDisplay: {
-    fontSize: 32,
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+  },
+  timeContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  timeText: {
+    fontSize: 48,
     fontWeight: 'bold',
     color: '#3B82F6',
+    textAlign: 'center',
   },
-  selectedDaysText: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingHorizontal: 16,
-  },
-  featureCard: {
-    flex: 1,
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  featureHeader: {
+  timeIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 8,
   },
-  featureTitle: {
-    fontSize: 16,
+  timeIndicatorText: {
+    color: '#F59E0B',
+    fontSize: 12,
     fontWeight: '600',
-    color: '#E2E8F0',
-    marginLeft: 8,
+    marginLeft: 4,
   },
-  featureDescription: {
-    fontSize: 13,
+  daysText: {
+    fontSize: 14,
     color: '#94A3B8',
-    lineHeight: 18,
+    textAlign: 'center',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#1E293B',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#334155',
-    maxHeight: '80%',
-  },
-  modalHeader: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    gap: 12,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#E2E8F0',
-  },
-  modalClose: {
-    fontSize: 16,
-    color: '#3B82F6',
-    fontWeight: '500',
-  },
-  customTimeContainer: {
-    paddingHorizontal: 0,
-    marginBottom: 16,
-  },
-  customTimeInputs: {
-    flexDirection: 'row',
-    gap: 16,
-    paddingHorizontal: 0,
-  },
-  customTimeInputGroup: {
+  editButton: {
     flex: 1,
-  },
-  customTimeLabel: {
-    color: '#94A3B8',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  customTimeInput: {
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    padding: 12,
-    color: '#E2E8F0',
-    fontSize: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#334155',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    height: 48,
-    includeFontPadding: false,
+    gap: 8,
   },
-  customTimeSubmit: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    width: '100%',
-  },
-  customTimeSubmitText: {
-    color: '#E2E8F0',
+  editButtonText: {
+    color: '#94A3B8',
     fontSize: 16,
     fontWeight: '600',
   },
   alarmButton: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  alarmButtonActive: {
-    backgroundColor: '#EF4444',
-  },
-  alarmButtonInactive: {
+    flex: 1,
     backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
   },
   alarmButtonText: {
     color: '#E2E8F0',
     fontSize: 16,
     fontWeight: '600',
   },
-  alarmModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alarmModalContent: {
-    backgroundColor: '#1E293B',
+  sleepInfoCard: {
+    backgroundColor: 'rgba(30, 41, 59, 1)',
     borderRadius: 16,
     padding: 24,
-    width: '80%',
+    margin: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  sleepInfoHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 24,
+  },
+  sleepInfoIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sleepInfoTitleContainer: {
+    flex: 1,
+  },
+  sleepInfoTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  sleepInfoSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  sleepInfoContent: {
+    gap: 20,
+  },
+  sleepTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    borderRadius: 12,
+    padding: 16,
     borderWidth: 1,
     borderColor: '#334155',
   },
-  alarmModalHeader: {
-    width: '100%',
-    marginBottom: 16,
+  sleepTimeItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  sleepTimeIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  sleepTimeTextContainer: {
+    flex: 1,
+  },
+  sleepTimeLabel: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 2,
+  },
+  sleepTimeValue: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  sleepTimeNote: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  sleepTimeDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+    marginHorizontal: 16,
+  },
+  sleepDurationContainer: {
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
     alignItems: 'center',
   },
-  alarmModalTitle: {
+  sleepDurationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  sleepDurationLabel: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginBottom: 4,
+  },
+  sleepDurationValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#E2E8F0',
-    textAlign: 'center',
-  },
-  alarmModalTimeContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  alarmModalTime: {
-    fontSize: 48,
-    fontWeight: '800',
     color: '#3B82F6',
-    textAlign: 'center',
   },
-  alarmModalButtons: {
+  sleepDurationNote: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  aiBadge: {
     flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  alarmModalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+    gap: 4,
   },
-  snoozeButton: {
-    backgroundColor: '#3B82F6',
-  },
-  alarmModalButtonText: {
-    color: '#E2E8F0',
-    fontSize: 16,
+  aiBadgeText: {
+    fontSize: 10,
     fontWeight: '600',
+    color: '#3B82F6',
+    textTransform: 'uppercase',
   },
-  stopAlarmButton: {
-    backgroundColor: '#EF4444',
+  insightsCard: {
+    backgroundColor: 'rgba(30, 41, 59, 1)',
+    borderRadius: 16,
+    padding: 24,
+    margin: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  daysContainer: {
-    marginBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#334155',
-    paddingTop: 16,
-  },
-  daysGrid: {
+  insightsHeader: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  dayButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
     alignItems: 'center',
+    marginBottom: 24,
+  },
+  insightsIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  insightsTitleContainer: {
+    flex: 1,
+  },
+  insightsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  insightsSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  insightsContent: {
+    gap: 16,
+  },
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+    gap: 12,
+  },
+  insightIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15, 23, 42, 1)',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#334155',
   },
-  dayButtonActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+  insightTextContainer: {
+    flex: 1,
   },
-  dayText: {
+  insightTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  insightDescription: {
+    fontSize: 14,
     color: '#94A3B8',
-    fontWeight: '500',
-  },
-  dayTextActive: {
-    color: 'white',
-  },
-  timeButtonDisabled: {
-    opacity: 0.7,
-    borderColor: '#475569',
-  },
-  timeDisplayDisabled: {
-    color: '#3B82F6',
-  },
-  selectedDaysTextDisabled: {
-    color: '#64748B',
+    marginTop: 2,
   },
 }); 

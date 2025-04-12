@@ -247,22 +247,22 @@ export default function Stats() {
         currentValue: currentRecord.quality,
         previousValue: weeklyAverages.quality
       },
-      lightLevel: {
+            lightLevel: {
         currentValue: currentRecord.environmental.light,
         previousValue: weeklyAverages.light
-      },
-      noiseLevel: {
+            },
+            noiseLevel: {
         currentValue: currentRecord.environmental.noise,
         previousValue: weeklyAverages.noise
-      },
-      temperature: {
+            },
+            temperature: {
         currentValue: currentRecord.environmental.temperature,
         previousValue: weeklyAverages.temperature,
         optimalValue: optimalValues.temperature,
         isAboveOptimal: currentRecord.environmental.temperature > optimalValues.temperature,
         isBelowOptimal: currentRecord.environmental.temperature < optimalValues.temperature
-      },
-      humidity: {
+            },
+            humidity: {
         currentValue: currentRecord.environmental.humidity,
         previousValue: weeklyAverages.humidity,
         optimalValue: optimalValues.humidity,
@@ -302,7 +302,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => {
           // Ensure we have a valid duration value
           const duration = r.duration || 0;
@@ -321,7 +321,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => r.cycles)
       }]
     };
@@ -332,7 +332,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => r.environmental.light)
       }]
     };
@@ -342,7 +342,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => r.environmental.noise)
       }]
     };
@@ -352,7 +352,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => r.environmental.temperature)
       }]
     };
@@ -362,7 +362,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-      datasets: [{
+    datasets: [{
         data: latestRecords.map(r => r.environmental.humidity)
       }]
     };
@@ -472,7 +472,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
+          <Activity size={24} color="#3B82F6" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Quality (%)</Text>
           </View>
           <TrendIndicator {...trends.sleepQuality} />
@@ -493,7 +493,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Clock size={24} color="#EC4899" style={styles.chartIcon} />
+          <Clock size={24} color="#EC4899" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Duration (h)</Text>
           </View>
           <TrendIndicator {...trends.avgDuration} />
@@ -514,7 +514,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Sun size={24} color="#EAB308" style={styles.chartIcon} />
+          <Sun size={24} color="#EAB308" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Sleep Cycles (count)</Text>
           </View>
           <TrendIndicator {...trends.sleepCycles} />
@@ -535,7 +535,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
+          <Volume2 size={24} color="#8B5CF6" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Ambient Noise (dB)</Text>
           </View>
           <TrendIndicator {...trends.noiseLevel} inverted={true} />
@@ -556,7 +556,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
+          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Light Level (lux)</Text>
           </View>
           <TrendIndicator {...trends.lightLevel} inverted={true} />
@@ -577,7 +577,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
+          <Thermometer size={24} color="#EF4444" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Temperature (°C)</Text>
           </View>
           <TrendIndicator {...trends.temperature} />
@@ -598,7 +598,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-            <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
+          <Sun size={24} color="#0EA5E9" style={styles.chartIcon} />
             <Text style={styles.chartTitle}>Humidity (%)</Text>
           </View>
           <TrendIndicator {...trends.humidity} />
