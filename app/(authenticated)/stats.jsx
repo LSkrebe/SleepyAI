@@ -212,14 +212,15 @@ export default function Stats() {
   const updateChartData = (records) => {
     if (records.length === 0) return;
 
-    // Sort records by date
+    // Sort records by date and get the latest 7 records
     const sortedRecords = [...records].sort((a, b) => 
       new Date(a.date) - new Date(b.date)
     );
+    const latestRecords = sortedRecords.slice(-7);
 
     // Calculate current averages
-    const currentRecord = sortedRecords[sortedRecords.length - 1];
-    const weeklyRecords = sortedRecords.slice(0, -1);
+    const currentRecord = latestRecords[latestRecords.length - 1];
+    const weeklyRecords = latestRecords.slice(0, -1);
     
     // Calculate weekly averages
     const weeklyAverages = {
@@ -284,25 +285,25 @@ export default function Stats() {
       }
     });
 
-    // Create chart data with actual values
+    // Create chart data with actual values from latest 7 records
     const newChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: sortedRecords.map(r => r.quality)
+        data: latestRecords.map(r => r.quality)
       }]
     };
 
     // Create sleep duration chart data with hours and minutes
     const durationChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => {
+      datasets: [{
+        data: latestRecords.map(r => {
           // Ensure we have a valid duration value
           const duration = r.duration || 0;
           // Convert minutes to hours and minutes
@@ -316,53 +317,53 @@ export default function Stats() {
 
     // Create sleep cycles chart data
     const cyclesChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => r.cycles)
+      datasets: [{
+        data: latestRecords.map(r => r.cycles)
       }]
     };
 
     // Create environmental charts data
     const lightChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => r.environmental.light)
+      datasets: [{
+        data: latestRecords.map(r => r.environmental.light)
       }]
     };
 
     const noiseChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => r.environmental.noise)
+      datasets: [{
+        data: latestRecords.map(r => r.environmental.noise)
       }]
     };
 
     const temperatureChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => r.environmental.temperature)
+      datasets: [{
+        data: latestRecords.map(r => r.environmental.temperature)
       }]
     };
 
     const humidityChartData = {
-      labels: sortedRecords.map(r => {
+      labels: latestRecords.map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
-        data: sortedRecords.map(r => r.environmental.humidity)
+      datasets: [{
+        data: latestRecords.map(r => r.environmental.humidity)
       }]
     };
 
@@ -486,7 +487,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 85% or higher sleep quality</Text>
+        <Text style={styles.chartTarget}>Aim for: 80% or higher sleep quality</Text>
       </View>
 
       <View style={styles.chartCard}>

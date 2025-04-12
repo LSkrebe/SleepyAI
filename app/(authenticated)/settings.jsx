@@ -86,7 +86,7 @@ export default function Settings() {
   const [customMinutes, setCustomMinutes] = useState('');
   const [expandedDays, setExpandedDays] = useState({});
   const [bedTime, setBedTime] = useState('22:00');
-  const [wakeTime, setWakeTime] = useState('07:00');
+  const [wakeTime, setWakeTime] = useState('06:00');
   const [recommendedBedTime, setRecommendedBedTime] = useState(null);
   const [recommendedWakeTime, setRecommendedWakeTime] = useState(null);
 
