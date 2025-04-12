@@ -14,7 +14,7 @@ const chartWidth = screenWidth - 32; // Adjusted to match stats page
 export default function Journal() {
   const { alarmTime, isAlarmActive } = useAlarm();
   const [sleepQuality, setSleepQuality] = useState(85);
-  const [sleepDuration, setSleepDuration] = useState('7h 30m');
+  const [sleepDuration, setSleepDuration] = useState('7:30');
   const [temperature, setTemperature] = useState(20);
   const [humidity, setHumidity] = useState(45);
   const [noise, setNoise] = useState(30);
@@ -315,7 +315,7 @@ export default function Journal() {
       const totalMinutes = data.sleepDuration;
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
-      setSleepDuration(`${hours}h ${minutes}m`);
+      setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
 
       // Update sleep cycles from API response
       if (data.cycles) {
@@ -361,7 +361,7 @@ export default function Journal() {
       // Save the updated data
       const cardData = {
         quality: Math.round(averageScore),
-        duration: `${hours}h ${minutes}m`,
+        duration: `${hours}:${minutes.toString().padStart(2, '0')}`,
         cycles: data.cycles ? data.cycles.count : sleepCycles,
         cycleDuration: data.cycles ? Math.round((hours * 60 + minutes) / data.cycles.count) : cycleDuration,
         temperature: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.temperature, 0) / data.environmental.length) : temperature,
@@ -437,114 +437,118 @@ export default function Journal() {
       contentContainerStyle={styles.contentContainer}
     >
       <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>SleepyAI</Text>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+        </View>
+        <View style={styles.appTitleContainer}>
+          <Text style={styles.appTitle}>SleepyAI</Text>
           <View style={styles.titleDecoration} />
-          <Text style={styles.subtitle}>Your personal sleep companion</Text>
+          <Text style={styles.appSubtitle}>Your personal sleep companion</Text>
         </View>
       </Animated.View>
 
       <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }] }]}>
         <View style={styles.cardHeader}>
           <View style={styles.todayHeaderContent}>
-            <View style={styles.todayTitleContainer}>
-              <Text style={[styles.cardTitle, styles.todayTitle]}>
-                {latestSleepDate ? formatDate(latestSleepDate) : 'Today\'s Sleep'}
-              </Text>
-              <Text style={styles.todayDate}>
-                {latestSleepDate ? formatDateSubtitle(latestSleepDate) : new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </Text>
-            </View>
+            <Text style={styles.todayTitle}>
+              {latestSleepDate ? formatDate(latestSleepDate) : 'Today\'s Sleep'}
+            </Text>
+            <Text style={styles.todaySubtitle}>
+              {latestSleepDate ? formatDateSubtitle(latestSleepDate) : new Date().toLocaleDateString('en-US', { 
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </Text>
           </View>
           <View style={styles.todayIconContainer}>
             <Moon size={28} color="#3B82F6" />
           </View>
         </View>
-        <View style={styles.sleepStats}>
-          <View style={styles.statItem}>
-            <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepDuration.split(' ')[0].replace('h', '')}</Text>
-              <Text style={styles.statUnit}>h</Text>
-              <Text style={[styles.statValue, { marginLeft: 8 }]}>{sleepDuration.split(' ')[1].replace('m', '')}</Text>
-              <Text style={styles.statUnit}>m</Text>
-            </View>
-            <Text style={styles.statLabel}>Sleep Duration</Text>
+
+        <View style={styles.todayContent}>
+          <View style={styles.chartContainer}>
+            <LineChart
+              data={sleepQualityData}
+              width={chartWidth}
+              height={220}
+              chartConfig={chartConfig}
+              bezier
+              style={styles.chart}
+            />
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <View style={styles.statValueContainer}>
-              <Text style={styles.statValue}>{sleepQuality}</Text>
-              <Text style={styles.statUnit}>%</Text>
+          <View style={styles.metricsGrid}>
+            <View style={[styles.metricItem, styles.metricItemDuration]}>
+              <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(132, 204, 22, 0.1)' }]}>
+                <Timer size={20} color="#84CC16" />
+              </View>
+              <View style={styles.metricContent}>
+                <View style={styles.metricValueContainer}>
+                  <Text style={styles.metricValue}>{sleepDuration}</Text>
+                </View>
+                <Text style={styles.metricLabel}>Sleep Duration</Text>
+              </View>
             </View>
-            <Text style={styles.statLabel}>Sleep Quality</Text>
+            <View style={[styles.metricItem, styles.metricItemQuality]}>
+              <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(6, 182, 212, 0.1)' }]}>
+                <Brain size={20} color="#06B6D4" />
+              </View>
+              <View style={styles.metricContent}>
+                <View style={styles.metricValueContainer}>
+                  <Text style={styles.metricValue}>{sleepQuality}%</Text>
+                </View>
+                <Text style={styles.metricLabel}>Sleep Quality</Text>
+              </View>
+            </View>
           </View>
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.chartCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
+      <Animated.View style={[styles.card, styles.environmentCard, { transform: [{ translateY: slideUpAnim2 }] }]}>
         <View style={styles.cardHeader}>
-          <View style={styles.insightsHeaderContent}>
-            <Text style={[styles.cardTitle, styles.chartTitle]}>Sleep Quality Trend</Text>
-            <Text style={styles.insightsSubtitle}>Latest sleep record</Text>
+          <View style={styles.environmentHeaderContent}>
+            <Text style={[styles.cardTitle, styles.environmentTitle]}>Sleep Environment</Text>
+            <Text style={styles.environmentSubtitle}>Latest record</Text>
           </View>
-          <View style={styles.todayIconContainer}>
+          <View style={styles.environmentIconContainer}>
             <Activity size={28} color="#3B82F6" />
           </View>
         </View>
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={sleepQualityData}
-            width={chartWidth}
-            height={220}
-            chartConfig={chartConfig}
-            bezier
-            style={styles.chart}
-          />
-        </View>
-        <View style={styles.metricsContainer}>
-          <View style={styles.metricsHeader}>
-            <Text style={styles.metricsTitle}>Sleep Environment</Text>
+        <View style={styles.metricsGrid}>
+          <View style={[styles.metricItem, styles.metricItemTemperature]}>
+            <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.1)' }]}>
+              <Thermometer size={20} color="#EC4899" />
+            </View>
+            <View style={styles.metricContent}>
+              <Text style={styles.metricValue}>{temperature}°C</Text>
+              <Text style={styles.metricLabel}>Temperature</Text>
+            </View>
           </View>
-          <View style={styles.metricsGrid}>
-            <View style={[styles.metricItem, styles.metricItemTemperature]}>
-              <View style={styles.metricIconContainer}>
-                <Thermometer size={20} color="#EF4444" />
-              </View>
-              <View style={styles.metricContent}>
-                <Text style={styles.metricValue}>{temperature}°C</Text>
-                <Text style={styles.metricLabel}>Temperature</Text>
-              </View>
+          <View style={[styles.metricItem, styles.metricItemHumidity]}>
+            <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(14, 165, 233, 0.1)' }]}>
+              <Droplets size={20} color="#0EA5E9" />
             </View>
-            <View style={[styles.metricItem, styles.metricItemHumidity]}>
-              <View style={styles.metricIconContainer}>
-                <Droplets size={20} color="#0EA5E9" />
-              </View>
-              <View style={styles.metricContent}>
-                <Text style={styles.metricValue}>{humidity}%</Text>
-                <Text style={styles.metricLabel}>Humidity</Text>
-              </View>
+            <View style={styles.metricContent}>
+              <Text style={styles.metricValue}>{humidity}%</Text>
+              <Text style={styles.metricLabel}>Humidity</Text>
             </View>
-            <View style={[styles.metricItem, styles.metricItemNoise]}>
-              <View style={styles.metricIconContainer}>
-                <Volume2 size={20} color="#8B5CF6" />
-              </View>
-              <View style={styles.metricContent}>
-                <Text style={styles.metricValue}>{noise} dB</Text>
-                <Text style={styles.metricLabel}>Noise Level</Text>
-              </View>
+          </View>
+          <View style={[styles.metricItem, styles.metricItemNoise]}>
+            <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
+              <Volume2 size={20} color="#6366F1" />
             </View>
-            <View style={[styles.metricItem, styles.metricItemLight]}>
-              <View style={styles.metricIconContainer}>
-                <Sun size={20} color="#F59E0B" />
-              </View>
-              <View style={styles.metricContent}>
-                <Text style={styles.metricValue}>{light} lux</Text>
-                <Text style={styles.metricLabel}>Light Level</Text>
-              </View>
+            <View style={styles.metricContent}>
+              <Text style={styles.metricValue}>{noise} dB</Text>
+              <Text style={styles.metricLabel}>Noise Level</Text>
+            </View>
+          </View>
+          <View style={[styles.metricItem, styles.metricItemLight]}>
+            <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
+              <Sun size={20} color="#F59E0B" />
+            </View>
+            <View style={styles.metricContent}>
+              <Text style={styles.metricValue}>{light} lux</Text>
+              <Text style={styles.metricLabel}>Light Level</Text>
             </View>
           </View>
         </View>
@@ -554,7 +558,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.cyclesTitle]}>Sleep Cycles</Text>
-            <Text style={styles.insightsSubtitle}>Based on sleep stage transitions</Text>
+            <Text style={styles.insightsSubtitle}>Your sleep stages</Text>
           </View>
           <View style={styles.todayIconContainer}>
             <Timer size={28} color="#3B82F6" />
@@ -583,7 +587,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.insightsTitle]}>Sleep Insights</Text>
-            <Text style={styles.insightsSubtitle}>Personalized recommendations</Text>
+            <Text style={styles.insightsSubtitle}>Your recommendations</Text>
           </View>
           <View style={styles.insightsIconContainer}>
             <Brain size={28} color="#3B82F6" />
@@ -600,11 +604,11 @@ export default function Journal() {
                   index === 2 && styles.insightIconContainerSun
                 ]}>
                   {index === 0 ? (
-                    <Timer size={20} color="#22C55E" />
+                    <Brain size={20} color="#84CC16" />
                   ) : index === 1 ? (
-                    <Thermometer size={20} color="#EF4444" />
+                    <Activity size={20} color="#EC4899" />
                   ) : (
-                    <Sun size={20} color="#F59E0B" />
+                    <BellRing size={20} color="#0EA5E9" />
                   )}
                 </View>
                 <View style={styles.insightContent}>
@@ -622,7 +626,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.insightsHeaderContent}>
             <Text style={[styles.cardTitle, styles.alarmTitle]}>Next Alarm</Text>
-            <Text style={styles.insightsSubtitle}>Set your wake-up time</Text>
+            <Text style={styles.insightsSubtitle}>Wake-up time</Text>
           </View>
           <View style={styles.todayIconContainer}>
             <BellRing size={28} color="#3B82F6" />
@@ -667,36 +671,58 @@ const styles = StyleSheet.create({
     paddingBottom: 64,
   },
   header: {
-    paddingTop: 48,
-    paddingBottom: 32,
+    paddingTop: 60,
+    paddingBottom: 40,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
+    position: 'relative',
+    overflow: 'visible',
   },
-  titleContainer: {
-    marginBottom: 8,
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
   },
-  title: {
-    fontSize: 42,
+  headerGlow: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+    width: 200,
+    height: 200,
+    backgroundColor: '#3B82F6',
+    borderRadius: 100,
+    opacity: 0.1,
+    transform: [{ scale: 1.5 }],
+  },
+  appTitleContainer: {
+    position: 'relative',
+    zIndex: 2,
+  },
+  appTitle: {
+    fontSize: 32,
     fontWeight: '800',
     color: '#E2E8F0',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(59, 130, 246, 0.5)',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(226, 232, 240, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 8,
+    textShadowRadius: 4,
   },
   titleDecoration: {
     position: 'absolute',
     bottom: -4,
     left: 0,
-    width: 60,
-    height: 4,
+    width: 40,
+    height: 3,
     backgroundColor: '#3B82F6',
     borderRadius: 2,
   },
-  subtitle: {
-    fontSize: 18,
+  appSubtitle: {
+    fontSize: 16,
     color: '#94A3B8',
-    marginTop: 12,
+    marginTop: 8,
     letterSpacing: 0.5,
   },
   card: {
@@ -709,11 +735,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   todayCard: {
+    marginTop: 0,
     borderColor: '#3B82F6',
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 16,
   },
@@ -722,10 +749,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#E2E8F0',
   },
+  todayContent: {
+    flexDirection: 'column',
+    gap: 16,
+  },
   sleepStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    marginTop: 8,
   },
   statItem: {
     alignItems: 'center',
@@ -755,16 +787,6 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#334155',
   },
-  chartCard: {
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    overflow: 'hidden',
-  },
   chartContainer: {
     marginVertical: 8,
     alignItems: 'center',
@@ -789,54 +811,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'center',
   },
-  metricsContainer: {
-    marginTop: 16,
-  },
-  metricsHeader: {
-    marginBottom: 16,
-  },
-  metricsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#E2E8F0',
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  metricItem: {
-    flex: 1,
-    minWidth: '45%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(15, 23, 42, 0.3)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
-  },
-  metricIconContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-  },
-  metricContent: {
-    flex: 1,
-  },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#E2E8F0',
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
   cyclesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -856,6 +830,29 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 4,
   },
+  cycleValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  cycleUnit: {
+    fontSize: 16,
+    color: '#94A3B8',
+    marginLeft: 4,
+  },
+  cycleDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+  },
+  cyclesCard: {
+    borderColor: 'rgba(51, 65, 85, 0.2)',
+    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+  },
+  cyclesTitle: {
+    fontSize: 20,
+    color: '#E2E8F0',
+    marginBottom: 2,
+  },
   insightsContainer: {
     gap: 12,
   },
@@ -866,7 +863,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.3)',
+    borderColor: 'rgba(51, 65, 85, 0.2)',
   },
   insightIconContainer: {
     width: 32,
@@ -883,6 +880,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#E2E8F0',
     lineHeight: 20,
+    fontWeight: '400',
   },
   emptyText: {
     fontSize: 14,
@@ -922,18 +920,16 @@ const styles = StyleSheet.create({
   },
   todayTitleContainer: {
     flex: 1,
-    marginLeft: 0,
   },
   todayTitle: {
-    fontSize: 22,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
   },
-  todayDate: {
+  todaySubtitle: {
     fontSize: 14,
     color: '#94A3B8',
-    marginLeft: 0,
+    marginTop: 2,
   },
   todayIconContainer: {
     width: 48,
@@ -943,59 +939,88 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cyclesCard: undefined,
-  cyclesTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
+  environmentCard: {
+    borderColor: 'rgba(51, 65, 85, 0.2)',
+    backgroundColor: 'rgba(30, 41, 59, 0.4)',
   },
-  cycleValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  cycleUnit: {
-    fontSize: 16,
-    color: '#94A3B8',
-    marginLeft: 4,
-  },
-  cycleDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: '#334155',
-  },
-  chartCard: undefined,
-  chartTitle: {
-    fontSize: 22,
-    color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
-  },
-  insightsCard: undefined,
-  insightsHeaderContent: {
+  environmentHeaderContent: {
     flex: 1,
   },
-  insightsIconContainer: {
+  environmentTitle: {
+    fontSize: 22,
+    color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  environmentSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+  },
+  environmentIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
   },
-  insightsTitle: {
-    fontSize: 22,
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  metricItem: {
+    flex: 1,
+    minWidth: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.3)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+  },
+  metricIconContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  metricContent: {
+    flex: 1,
+  },
+  metricValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  metricValue: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 2,
   },
-  insightsSubtitle: {
-    fontSize: 14,
+  metricUnit: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginLeft: 2,
+  },
+  metricLabel: {
+    fontSize: 12,
     color: '#94A3B8',
     marginTop: 2,
   },
-  alarmCard: undefined,
+  metricItemDuration: {
+    backgroundColor: 'rgba(132, 204, 22, 0.1)',
+    borderColor: 'rgba(132, 204, 22, 0.2)',
+  },
+  metricItemQuality: {
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  alarmCard: {
+    borderColor: 'rgba(51, 65, 85, 0.2)',
+    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+  },
   alarmTimeContainer: {
     alignItems: 'center',
     marginBottom: 12,
@@ -1013,7 +1038,7 @@ const styles = StyleSheet.create({
   alarmCountdown: {
     alignItems: 'center',
     padding: 12,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
     borderRadius: 8,
     width: '100%',
   },
@@ -1027,6 +1052,71 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 4,
   },
-  alarmIconContainer: undefined,
-  alarmEditButton: undefined,
+  alarmIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightsCard: {
+    borderColor: 'rgba(51, 65, 85, 0.2)',
+    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+  },
+  insightsHeaderContent: {
+    flex: 1,
+  },
+  insightsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  insightsTitle: {
+    fontSize: 20,
+    color: '#E2E8F0',
+    marginBottom: 2,
+  },
+  insightsSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  alarmTitle: {
+    fontSize: 22,
+    color: '#E2E8F0',
+    marginBottom: 2,
+    marginLeft: 0,
+  },
+  metricItemTemperature: {
+    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+    borderColor: 'rgba(236, 72, 153, 0.2)',
+  },
+  metricItemHumidity: {
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderColor: 'rgba(14, 165, 233, 0.2)',
+  },
+  metricItemNoise: {
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderColor: 'rgba(99, 102, 241, 0.2)',
+  },
+  metricItemLight: {
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  insightIconContainerTimer: {
+    backgroundColor: 'rgba(132, 204, 22, 0.08)',
+    borderColor: 'rgba(132, 204, 22, 0.15)',
+  },
+  insightIconContainerThermometer: {
+    backgroundColor: 'rgba(236, 72, 153, 0.08)',
+    borderColor: 'rgba(236, 72, 153, 0.15)',
+  },
+  insightIconContainerSun: {
+    backgroundColor: 'rgba(14, 165, 233, 0.08)',
+    borderColor: 'rgba(14, 165, 233, 0.15)',
+  },
 }); 
