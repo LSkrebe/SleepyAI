@@ -472,8 +472,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Activity size={24} color="#06B6D4" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Sleep Quality (%)</Text>
+            <Activity size={24} color="#06B6D4" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Sleep Quality (%)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.sleepQuality} />
         </View>
@@ -493,8 +495,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Clock size={24} color="#84CC16" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Sleep Duration (h)</Text>
+            <Clock size={24} color="#84CC16" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Sleep Duration (h)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.avgDuration} />
         </View>
@@ -514,8 +518,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Sun size={24} color="#F97316" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Sleep Cycles (count)</Text>
+            <Sun size={24} color="#F97316" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Sleep Cycles (count)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.sleepCycles} />
         </View>
@@ -535,8 +541,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Volume2 size={24} color="#6366F1" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Ambient Noise (dB)</Text>
+            <Volume2 size={24} color="#6366F1" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Ambient Noise (dB)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.noiseLevel} inverted={true} />
         </View>
@@ -557,7 +565,9 @@ export default function Stats() {
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
           <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Light Level (lux)</Text>
+            <View>
+              <Text style={styles.chartTitle}>Light Level (lux)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.lightLevel} inverted={true} />
         </View>
@@ -577,8 +587,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Thermometer size={24} color="#EC4899" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Temperature (°C)</Text>
+            <Thermometer size={24} color="#EC4899" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Temperature (°C)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.temperature} />
         </View>
@@ -598,8 +610,10 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Droplets size={24} color="#0EA5E9" style={styles.chartIcon} />
-            <Text style={styles.chartTitle}>Humidity (%)</Text>
+            <Droplets size={24} color="#0EA5E9" style={styles.chartIcon} />
+            <View>
+              <Text style={styles.chartTitle}>Humidity (%)</Text>
+            </View>
           </View>
           <TrendIndicator {...trends.humidity} />
         </View>
@@ -750,6 +764,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#E2E8F0',
+  },
+  chartSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   chartContainer: {
     marginVertical: 8,

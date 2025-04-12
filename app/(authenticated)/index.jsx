@@ -447,7 +447,7 @@ export default function Journal() {
         </View>
       </Animated.View>
 
-      <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }] }]}>
+      <Animated.View style={[styles.card, styles.todayCard, { transform: [{ translateY: slideUpAnim }], marginTop: 12 }]}>
         <View style={styles.cardHeader}>
           <View style={styles.todayHeaderContent}>
             <Text style={styles.todayTitle}>
@@ -956,6 +956,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   environmentCard: {
     borderColor: 'rgba(51, 65, 85, 0.2)',
@@ -965,21 +967,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   environmentTitle: {
-    fontSize: 22,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 2,
   },
   environmentSubtitle: {
     fontSize: 14,
     color: '#94A3B8',
+    marginTop: 2,
   },
   environmentIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -1081,9 +1086,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   insightsCard: {
     borderColor: 'rgba(51, 65, 85, 0.2)',
@@ -1096,14 +1103,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   insightsTitle: {
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 2,
   },
   insightsSubtitle: {
     fontSize: 14,
@@ -1111,10 +1120,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   alarmTitle: {
-    fontSize: 22,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#E2E8F0',
-    marginBottom: 2,
-    marginLeft: 0,
+  },
+  alarmSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
   },
   metricItemTemperature: {
     backgroundColor: 'rgba(236, 72, 153, 0.1)',

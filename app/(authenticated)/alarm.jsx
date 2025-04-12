@@ -28,12 +28,12 @@ export default function Alarm() {
 
       <View style={styles.timeCard}>
         <View style={styles.timeHeader}>
-          <View style={styles.timeIconContainer}>
-            <BellRing size={24} color="#3B82F6" />
-          </View>
           <View style={styles.timeHeaderContent}>
             <Text style={styles.timeLabel}>Wake Up Time</Text>
             <Text style={styles.timeSubtitle}>Set your morning alarm</Text>
+          </View>
+          <View style={styles.timeIconContainer}>
+            <BellRing size={24} color="#3B82F6" />
           </View>
         </View>
         
@@ -62,12 +62,12 @@ export default function Alarm() {
 
       <View style={styles.sleepInfoCard}>
         <View style={styles.sleepInfoHeader}>
-          <View style={styles.sleepInfoIconContainer}>
-            <Brain size={24} color="#3B82F6" />
-          </View>
           <View style={styles.sleepInfoTitleContainer}>
             <Text style={styles.sleepInfoTitle}>AI Sleep Schedule</Text>
             <Text style={styles.sleepInfoSubtitle}>Adapts to your actual sleep patterns</Text>
+          </View>
+          <View style={styles.sleepInfoIconContainer}>
+            <Brain size={24} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.sleepInfoContent}>
@@ -107,38 +107,6 @@ export default function Alarm() {
           </View>
         </View>
       </View>
-
-      <View style={styles.insightsCard}>
-        <View style={styles.insightsHeader}>
-          <View style={styles.insightsIconContainer}>
-            <Target size={24} color="#3B82F6" />
-          </View>
-          <View style={styles.insightsTitleContainer}>
-            <Text style={styles.insightsTitle}>Sleep Insights</Text>
-            <Text style={styles.insightsSubtitle}>Your personalized recommendations</Text>
-          </View>
-        </View>
-        <View style={styles.insightsContent}>
-          <View style={styles.insightItem}>
-            <View style={styles.insightIconContainer}>
-              <Zap size={20} color="#F59E0B" />
-            </View>
-            <View style={styles.insightTextContainer}>
-              <Text style={styles.insightTitle}>Energy Boost</Text>
-              <Text style={styles.insightDescription}>Wake up during light sleep for more energy</Text>
-            </View>
-          </View>
-          <View style={styles.insightItem}>
-            <View style={styles.insightIconContainer}>
-              <Clock size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.insightTextContainer}>
-              <Text style={styles.insightTitle}>Sleep Consistency</Text>
-              <Text style={styles.insightDescription}>Maintain consistent sleep schedule</Text>
-            </View>
-          </View>
-        </View>
-      </View>
     </ScrollView>
   );
 }
@@ -149,7 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   contentContainer: {
-    paddingBottom: 50,
+    paddingBottom: 64,
   },
   header: {
     paddingTop: 60,
@@ -219,40 +187,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   timeCard: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderRadius: 16,
-    padding: 24,
-    margin: 16,
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   timeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-  },
-  timeIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    marginBottom: 16,
   },
   timeHeaderContent: {
     flex: 1,
   },
   timeLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#E2E8F0',
   },
@@ -261,13 +213,24 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  timeDisplay: {
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 24,
+  timeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  timeDisplay: {
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.4)',
     alignItems: 'center',
   },
   timeContainer: {
@@ -276,18 +239,23 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 48,
-    fontWeight: 'bold',
-    color: '#3B82F6',
+    fontWeight: '700',
+    color: '#E2E8F0',
     textAlign: 'center',
+    textShadowColor: 'rgba(59, 130, 246, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   timeIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   timeIndicatorText: {
     color: '#F59E0B',
@@ -310,59 +278,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderRadius: 8,
+    padding: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(51, 65, 85, 0.4)',
     gap: 8,
   },
   editButtonText: {
     color: '#94A3B8',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   alarmButton: {
     flex: 1,
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderRadius: 8,
+    padding: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   alarmButtonText: {
-    color: '#E2E8F0',
-    fontSize: 16,
+    color: '#3B82F6',
+    fontSize: 14,
     fontWeight: '600',
   },
   sleepInfoCard: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderRadius: 16,
-    padding: 24,
-    margin: 16,
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   sleepInfoHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
   },
   sleepInfoIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginLeft: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   sleepInfoTitleContainer: {
     flex: 1,
@@ -378,17 +343,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sleepInfoContent: {
-    gap: 20,
+    gap: 16,
   },
   sleepTimeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(51, 65, 85, 0.4)',
   },
   sleepTimeItem: {
     flex: 1,
@@ -400,11 +365,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(15, 23, 42, 1)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(51, 65, 85, 0.4)',
   },
   sleepTimeTextContainer: {
     flex: 1,
@@ -428,15 +393,15 @@ const styles = StyleSheet.create({
   sleepTimeDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#334155',
+    backgroundColor: 'rgba(51, 65, 85, 0.4)',
     marginHorizontal: 16,
   },
   sleepDurationContainer: {
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: 'rgba(51, 65, 85, 0.4)',
     alignItems: 'center',
   },
   sleepDurationHeader: {
@@ -455,6 +420,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#3B82F6',
+    textShadowColor: 'rgba(59, 130, 246, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   sleepDurationNote: {
     fontSize: 12,
@@ -465,10 +433,10 @@ const styles = StyleSheet.create({
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.3)',
     gap: 4,
@@ -478,84 +446,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#3B82F6',
     textTransform: 'uppercase',
-  },
-  insightsCard: {
-    backgroundColor: 'rgba(30, 41, 59, 1)',
-    borderRadius: 16,
-    padding: 24,
-    margin: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  insightsIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  insightsTitleContainer: {
-    flex: 1,
-  },
-  insightsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#E2E8F0',
-  },
-  insightsSubtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  insightsContent: {
-    gap: 16,
-  },
-  insightItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    gap: 12,
-  },
-  insightIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15, 23, 42, 1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  insightTextContainer: {
-    flex: 1,
-  },
-  insightTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#E2E8F0',
-  },
-  insightDescription: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
+  }
 }); 
