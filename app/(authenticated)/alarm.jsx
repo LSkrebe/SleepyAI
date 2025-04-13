@@ -1,10 +1,302 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
-import { BellRing, ChevronDown, Clock, Sun, Moon, Sparkles, Zap, Target, Brain } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, Modal, TextInput } from 'react-native';
+import { BellRing, ChevronDown, Clock, Sun, Moon, Sparkles, Zap, Target, Brain, Check } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
+import sleepTrackingService from '../../services/sleepTrackingService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: screenWidth } = Dimensions.get('window');
 
+const DAYS = [
+  { id: 'monday', label: 'Monday' },
+  { id: 'tuesday', label: 'Tuesday' },
+  { id: 'wednesday', label: 'Wednesday' },
+  { id: 'thursday', label: 'Thursday' },
+  { id: 'friday', label: 'Friday' },
+  { id: 'saturday', label: 'Saturday' },
+  { id: 'sunday', label: 'Sunday' },
+];
+
+// Get settings storage key based on user ID
+const getSettingsStorageKey = (userId) => `@sleepyai_settings_${userId}`;
+
+const DEFAULT_SETTINGS = {
+  sleepDetection: true,
+  sleepReminders: true,
+  wakeUpReminders: true,
+  days: DAYS.reduce((acc, day) => ({
+    ...acc,
+    [day.id]: {
+      bedtime: '22:00',
+      wakeup: '07:00',
+      enabled: true
+    }
+  }), {}),
+  recommendations: {}
+};
+
 export default function Alarm() {
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [recommendations, setRecommendations] = useState({});
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedSetting, setSelectedSetting] = useState(null);
+  const [customHours, setCustomHours] = useState('');
+  const [customMinutes, setCustomMinutes] = useState('');
+  const [bedTime, setBedTime] = useState('22:00');
+  const [wakeTime, setWakeTime] = useState('07:00');
+  const [recommendedBedTime, setRecommendedBedTime] = useState(null);
+  const [recommendedWakeTime, setRecommendedWakeTime] = useState(null);
+  const [isCurrentDayEnabled, setIsCurrentDayEnabled] = useState(true);
+  const [showRecommendation, setShowRecommendation] = useState(false);
+
+  const { user } = useAuth();
+
+  // Load settings when component mounts
+  useEffect(() => {
+    if (user) {
+      loadSettings();
+    }
+  }, [user]);
+
+  // Load settings from AsyncStorage
+  const loadSettings = async () => {
+    try {
+      const storageKey = getSettingsStorageKey(user.uid);
+      const savedSettings = await AsyncStorage.getItem(storageKey);
+      
+      if (savedSettings) {
+        const parsedSettings = JSON.parse(savedSettings);
+        
+        // Validate and merge with default settings
+        const validatedSettings = {
+          ...DEFAULT_SETTINGS,
+          ...parsedSettings,
+          days: {
+            ...DEFAULT_SETTINGS.days,
+            ...(parsedSettings.days || {})
+          },
+          recommendations: parsedSettings.recommendations || {}
+        };
+        
+        setSettings(validatedSettings);
+        // Set recommendations from saved settings
+        setRecommendations(validatedSettings.recommendations);
+        
+        // Get current day's settings
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        const daySettings = validatedSettings.days[currentDay.id];
+        
+        if (daySettings) {
+          // Set the enabled state for the current day
+          setIsCurrentDayEnabled(daySettings.enabled);
+          
+          if (daySettings.enabled) {
+            setBedTime(daySettings.bedtime);
+            setWakeTime(daySettings.wakeup);
+          }
+        }
+
+        // Check if there are recommendations for the current day
+        const currentDayRecommendation = validatedSettings.recommendations[currentDay.id];
+        if (currentDayRecommendation) {
+          setRecommendedBedTime(currentDayRecommendation.bedtime);
+          setRecommendedWakeTime(currentDayRecommendation.wakeup);
+          setShowRecommendation(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      // If there's an error, use default settings
+      setSettings(DEFAULT_SETTINGS);
+    }
+  };
+
+  // Save settings to AsyncStorage
+  const saveSettings = async () => {
+    try {
+      const storageKey = getSettingsStorageKey(user.uid);
+      await AsyncStorage.setItem(storageKey, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  // Save settings whenever they change
+  useEffect(() => {
+    if (user) {
+      saveSettings();
+    }
+  }, [settings, user]);
+
+  useEffect(() => {
+    // Listen for sleep window updates from the service
+    const handleSleepWindowUpdate = ({ bedTime, wakeTime, recommendedBedTime, recommendedWakeTime, currentDay }) => {
+      // Update current display times
+      setBedTime(bedTime);
+      setWakeTime(wakeTime);
+
+      // Store recommendations if they differ from current times
+      if (recommendedBedTime && recommendedWakeTime) {
+        setRecommendedBedTime(recommendedBedTime);
+        setRecommendedWakeTime(recommendedWakeTime);
+        setShowRecommendation(true);
+      }
+    };
+
+    // Listen for sleep quality updates
+    const handleSleepQualityUpdate = (data) => {
+      if (data.recommendation) {
+        const { bedtime, waketime } = data.recommendation;
+        
+        // Get current day's settings
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        const daySettings = settings.days[currentDay.id];
+        
+        // Check if recommendations match current times
+        if (bedtime === daySettings.bedtime && waketime === daySettings.wakeup) {
+          // Clear recommendations for this day
+          setRecommendations(prev => {
+            const newRecommendations = { ...prev };
+            delete newRecommendations[currentDay.id];
+            return newRecommendations;
+          });
+          setShowRecommendation(false);
+        } else {
+          // Store recommendations if they differ
+          setRecommendations(prev => ({
+            ...prev,
+            [currentDay.id]: {
+              bedtime,
+              wakeup: waketime
+            }
+          }));
+          
+          // Update settings with new recommendations
+          setSettings(prev => ({
+            ...prev,
+            recommendations: {
+              ...prev.recommendations,
+              [currentDay.id]: {
+                bedtime,
+                wakeup: waketime
+              }
+            }
+          }));
+          
+          // Update local state
+          setRecommendedBedTime(bedtime);
+          setRecommendedWakeTime(waketime);
+          setShowRecommendation(true);
+        }
+      }
+    };
+
+    sleepTrackingService.onSleepWindowUpdate(handleSleepWindowUpdate);
+    sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
+
+    return () => {
+      // Cleanup listeners when component unmounts
+      sleepTrackingService.offSleepWindowUpdate(handleSleepWindowUpdate);
+      sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
+    };
+  }, [settings.days]);
+
+  const openTimePicker = (setting) => {
+    const time = setting === 'bedtime' ? bedTime : wakeTime;
+    const [hours, minutes] = time.split(':');
+    setCustomHours(hours);
+    setCustomMinutes(minutes);
+    setSelectedSetting(setting);
+    setShowTimePicker(true);
+  };
+
+  const handleTimeSubmit = () => {
+    const hours = parseInt(customHours);
+    const minutes = parseInt(customMinutes);
+    
+    if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+      const formattedTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      // Get current day
+      const today = new Date().getDay();
+      const adjustedDay = today === 0 ? 6 : today - 1;
+      const currentDay = DAYS[adjustedDay];
+      
+      // Update settings with new time
+      setSettings(prev => {
+        const newSettings = {
+          ...prev,
+          days: {
+            ...prev.days,
+            [currentDay.id]: {
+              ...prev.days[currentDay.id],
+              [selectedSetting]: formattedTime,
+            }
+          }
+        };
+
+        // Update sleep tracking service with new times
+        const daySettings = newSettings.days[currentDay.id];
+        sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
+
+        // Update local state
+        if (selectedSetting === 'bedtime') {
+          setBedTime(formattedTime);
+        } else {
+          setWakeTime(formattedTime);
+        }
+
+        return newSettings;
+      });
+      
+      setShowTimePicker(false);
+    }
+  };
+
+  const applyRecommendation = () => {
+    // Get current day
+    const today = new Date().getDay();
+    const adjustedDay = today === 0 ? 6 : today - 1;
+    const currentDay = DAYS[adjustedDay];
+    
+    // Update settings with recommended times
+    setSettings(prev => {
+      const newSettings = {
+        ...prev,
+        days: {
+          ...prev.days,
+          [currentDay.id]: {
+            ...prev.days[currentDay.id],
+            bedtime: recommendedBedTime,
+            wakeup: recommendedWakeTime,
+          }
+        },
+        recommendations: {
+          ...prev.recommendations,
+          [currentDay.id]: null // Clear recommendation after applying
+        }
+      };
+
+      // Update sleep tracking service with new times
+      const daySettings = newSettings.days[currentDay.id];
+      sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
+
+      return newSettings;
+    });
+    
+    // Update local state
+    setBedTime(recommendedBedTime);
+    setWakeTime(recommendedWakeTime);
+    setShowRecommendation(false);
+    
+    // Explicitly save settings to ensure persistence
+    saveSettings();
+  };
+
   return (
       <ScrollView 
       style={styles.container}
@@ -71,21 +363,95 @@ export default function Alarm() {
           </View>
         </View>
         <View style={styles.cyclesContainer}>
-          <View style={styles.cycleItem}>
+          <TouchableOpacity 
+            style={styles.cycleItem}
+            onPress={() => openTimePicker('bedtime')}
+          >
             <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>23:30</Text>
+              <Text style={styles.cycleValue}>{bedTime}</Text>
             </View>
             <Text style={styles.cycleLabel}>Bedtime</Text>
-          </View>
+            {showRecommendation && recommendedBedTime && recommendedBedTime !== bedTime && (
+              <Text style={styles.recommendationText}>Recommended: {recommendedBedTime}</Text>
+            )}
+          </TouchableOpacity>
           <View style={styles.cycleDivider} />
-          <View style={styles.cycleItem}>
+          <TouchableOpacity 
+            style={styles.cycleItem}
+            onPress={() => openTimePicker('wakeup')}
+          >
             <View style={styles.cycleValueContainer}>
-              <Text style={styles.cycleValue}>07:30</Text>
-            </View>
+              <Text style={styles.cycleValue}>{wakeTime}</Text>
+          </View>
             <Text style={styles.cycleLabel}>Wake up</Text>
+            {showRecommendation && recommendedWakeTime && recommendedWakeTime !== wakeTime && (
+              <Text style={styles.recommendationText}>Recommended: {recommendedWakeTime}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+        
+        {showRecommendation && recommendedBedTime && recommendedWakeTime && 
+         (recommendedBedTime !== bedTime || recommendedWakeTime !== wakeTime) && (
+          <TouchableOpacity 
+            style={styles.recommendationButton}
+            onPress={applyRecommendation}
+          >
+            <Check size={16} color="#FFFFFF" />
+            <Text style={styles.recommendationButtonText}>Apply Recommendation</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <Modal
+        visible={showTimePicker}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedSetting === 'bedtime' ? 'Set Bedtime' : 'Set Wake-up Time'}
+              </Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Text style={styles.modalClose}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.timeInputContainer}>
+              <View style={styles.timeInputWrapper}>
+                  <TextInput
+                  style={styles.timeInput}
+                    value={customHours}
+                    onChangeText={setCustomHours}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    placeholder="00"
+                  placeholderTextColor="#64748B"
+                  />
+                <Text style={styles.timeSeparator}>:</Text>
+                  <TextInput
+                  style={styles.timeInput}
+                    value={customMinutes}
+                    onChangeText={setCustomMinutes}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                    placeholder="00"
+                  placeholderTextColor="#64748B"
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.modalSubmitButton}
+              onPress={handleTimeSubmit}
+            >
+              <Text style={styles.modalSubmitButtonText}>Set Time</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -348,5 +714,89 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: '#334155',
+  },
+  recommendationText: {
+    fontSize: 12,
+    color: '#3B82F6',
+    marginTop: 4,
+  },
+  recommendationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 16,
+    gap: 8,
+  },
+  recommendationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 20,
+    width: screenWidth - 32,
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E2E8F0',
+  },
+  modalClose: {
+    fontSize: 16,
+    color: '#64748B',
+  },
+  timeInputContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  timeInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeInput: {
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    padding: 12,
+    width: 80,
+    textAlign: 'center',
+    fontSize: 24,
+    color: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  timeSeparator: {
+    fontSize: 24,
+    color: '#E2E8F0',
+    marginHorizontal: 4,
+  },
+  modalSubmitButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  modalSubmitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 
