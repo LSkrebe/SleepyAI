@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Modal, TextInput, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Dimensions } from 'react-native';
 import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock, ChevronDown, Brain, Activity } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
@@ -25,45 +25,6 @@ const DEFAULT_SETTINGS = {
   wakeUpReminders: true,
 };
 
-const CustomToggle = ({ value, onValueChange }) => {
-  const toggleAnimation = useRef(new Animated.Value(value ? 1 : 0)).current;
-
-  React.useEffect(() => {
-    Animated.spring(toggleAnimation, {
-      toValue: value ? 1 : 0,
-      useNativeDriver: true,
-      friction: 8,
-      tension: 40,
-    }).start();
-  }, [value]);
-
-  const translateX = toggleAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 24],
-  });
-
-  return (
-    <TouchableOpacity
-      onPress={onValueChange}
-      style={[
-        styles.toggleContainer,
-        { backgroundColor: value ? 'rgba(59, 130, 246, 0.3)' : '#1E293B' }
-      ]}
-    >
-      <Animated.View
-        style={[
-          styles.toggleThumb,
-          {
-            transform: [{ translateX }],
-            backgroundColor: value ? '#3B82F6' : '#64748B',
-            borderColor: value ? '#3B82F6' : '#334155',
-          },
-        ]}
-      />
-    </TouchableOpacity>
-  );
-};
-
 export default function Settings() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -72,45 +33,10 @@ export default function Settings() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
   
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideUpAnim = useRef(new Animated.Value(100)).current;
-  const slideUpAnim2 = useRef(new Animated.Value(100)).current;
-  const slideUpAnim3 = useRef(new Animated.Value(100)).current;
-
   const { logout, user } = useAuth();
 
   useEffect(() => {
     loadSettings();
-    
-    // Start animations
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideUpAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideUpAnim2, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        delay: 200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideUpAnim3, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        delay: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
   }, []);
 
   const loadSettings = async () => {
@@ -160,7 +86,7 @@ export default function Settings() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+      <View style={styles.header}>
         <View style={styles.headerBackground}>
           <View style={styles.headerGlow} />
         </View>
@@ -169,9 +95,9 @@ export default function Settings() {
           <View style={styles.titleDecoration} />
           <Text style={styles.subtitle}>Customize your sleep experience</Text>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim }] }]}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderContent}>
             <Text style={styles.cardTitle}>Sleep Tracking</Text>
@@ -192,14 +118,27 @@ export default function Settings() {
               <Text style={styles.settingItemDescription}>Automatically detect when you're sleeping</Text>
             </View>
           </View>
-          <CustomToggle 
-            value={settings.sleepDetection} 
-            onValueChange={() => toggleSetting('sleepDetection')} 
-          />
+          <TouchableOpacity
+            onPress={() => toggleSetting('sleepDetection')}
+            style={[
+              styles.toggleContainer,
+              { backgroundColor: settings.sleepDetection ? 'rgba(59, 130, 246, 0.3)' : '#1E293B' }
+            ]}
+          >
+            <View
+              style={[
+                styles.toggleThumb,
+                {
+                  backgroundColor: settings.sleepDetection ? '#3B82F6' : '#64748B',
+                  borderColor: settings.sleepDetection ? '#3B82F6' : '#334155',
+                },
+              ]}
+            />
+          </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim2 }] }]}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderContent}>
             <Text style={styles.cardTitle}>Notifications</Text>
@@ -220,10 +159,23 @@ export default function Settings() {
               <Text style={styles.settingItemDescription}>Get notified when it's time to sleep</Text>
             </View>
           </View>
-          <CustomToggle 
-            value={settings.sleepReminders} 
-            onValueChange={() => toggleSetting('sleepReminders')} 
-          />
+          <TouchableOpacity
+            onPress={() => toggleSetting('sleepReminders')}
+            style={[
+              styles.toggleContainer,
+              { backgroundColor: settings.sleepReminders ? 'rgba(59, 130, 246, 0.3)' : '#1E293B' }
+            ]}
+          >
+            <View
+              style={[
+                styles.toggleThumb,
+                {
+                  backgroundColor: settings.sleepReminders ? '#3B82F6' : '#64748B',
+                  borderColor: settings.sleepReminders ? '#3B82F6' : '#334155',
+                },
+              ]}
+            />
+          </TouchableOpacity>
         </View>
         
         <View style={styles.settingItem}>
@@ -236,14 +188,27 @@ export default function Settings() {
               <Text style={styles.settingItemDescription}>Get notified when it's time to wake up</Text>
             </View>
           </View>
-          <CustomToggle 
-            value={settings.wakeUpReminders} 
-            onValueChange={() => toggleSetting('wakeUpReminders')} 
-          />
+          <TouchableOpacity
+            onPress={() => toggleSetting('wakeUpReminders')}
+            style={[
+              styles.toggleContainer,
+              { backgroundColor: settings.wakeUpReminders ? 'rgba(59, 130, 246, 0.3)' : '#1E293B' }
+            ]}
+          >
+            <View
+              style={[
+                styles.toggleThumb,
+                {
+                  backgroundColor: settings.wakeUpReminders ? '#3B82F6' : '#64748B',
+                  borderColor: settings.wakeUpReminders ? '#3B82F6' : '#334155',
+                },
+              ]}
+            />
+          </TouchableOpacity>
         </View>
-      </Animated.View>
+      </View>
 
-      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim3 }] }]}>
+      <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderContent}>
             <Text style={styles.cardTitle}>Account</Text>
@@ -266,7 +231,7 @@ export default function Settings() {
           </View>
           <ChevronRight size={20} color="#EF4444" />
         </TouchableOpacity>
-      </Animated.View>
+      </View>
     </ScrollView>
   );
 }

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Animated, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal, TextInput } from 'react-native';
 import { BellRing, ChevronDown, Clock, Sun, Moon, Sparkles, Zap, Target, Brain, Check } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import sleepTrackingService from '../../services/sleepTrackingService';
@@ -51,7 +51,6 @@ export default function Alarm() {
 
   const { user } = useAuth();
 
-  // Load settings when component mounts
   useEffect(() => {
     if (user) {
       loadSettings();
@@ -165,7 +164,7 @@ export default function Alarm() {
             return newRecommendations;
           });
           setShowRecommendation(false);
-    } else {
+        } else {
           // Store recommendations if they differ
           setRecommendations(prev => ({
             ...prev,
@@ -298,28 +297,28 @@ export default function Alarm() {
   };
 
   return (
-      <ScrollView 
+    <ScrollView 
       style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View style={styles.header}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Alarm</Text>
-            <View style={styles.titleDecoration} />
-            <Text style={styles.subtitle}>Wake up refreshed and energized</Text>
-          </View>
-          <View style={styles.headerBackground}>
-            <View style={styles.headerGlow} />
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>Alarm</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subtitle}>Wake up refreshed</Text>
+        </View>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
           <View style={styles.headerParticles}>
             <View style={styles.particle} />
             <View style={styles.particle} />
             <View style={styles.particle} />
           </View>
-          </View>
         </View>
+      </View>
 
-        <View style={styles.timeCard}>
-          <View style={styles.timeHeader}>
+      <View style={styles.timeCard}>
+        <View style={styles.timeHeader}>
           <View style={styles.timeHeaderContent}>
             <Text style={styles.timeLabel}>Wake Up Time</Text>
             <Text style={styles.timeSubtitle}>Set your morning alarm</Text>
@@ -327,8 +326,8 @@ export default function Alarm() {
           <View style={styles.timeIconContainer}>
             <BellRing size={24} color="#3B82F6" />
           </View>
-          </View>
-          
+        </View>
+        
         <View style={styles.timeDisplay}>
           <View style={styles.timeContainer}>
             <Text style={styles.timeText}>07:30</Text>
@@ -341,16 +340,11 @@ export default function Alarm() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.editButton}>
-            <ChevronDown size={20} color="#94A3B8" />
-            <Text style={styles.editButtonText}>Edit Time</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.alarmButton}>
             <Text style={styles.alarmButtonText}>Set Alarm</Text>
           </TouchableOpacity>
         </View>
-            </View>
+      </View>
 
       <View style={styles.sleepInfoCard}>
         <View style={styles.sleepInfoHeader}>
@@ -376,20 +370,20 @@ export default function Alarm() {
             )}
           </TouchableOpacity>
           <View style={styles.cycleDivider} />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.cycleItem}
             onPress={() => openTimePicker('wakeup')}
           >
             <View style={styles.cycleValueContainer}>
               <Text style={styles.cycleValue}>{wakeTime}</Text>
-          </View>
+            </View>
             <Text style={styles.cycleLabel}>Wake up</Text>
             {showRecommendation && recommendedWakeTime && recommendedWakeTime !== wakeTime && (
               <Text style={styles.recommendationText}>Recommended: {recommendedWakeTime}</Text>
             )}
           </TouchableOpacity>
         </View>
-        
+
         {showRecommendation && recommendedBedTime && recommendedWakeTime && 
          (recommendedBedTime !== bedTime || recommendedWakeTime !== wakeTime) && (
           <TouchableOpacity 
@@ -617,23 +611,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
-  },
-  editButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.4)',
-    gap: 8,
-  },
-  editButtonText: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '600',
   },
   alarmButton: {
     flex: 1,

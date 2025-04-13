@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Activity, Brain, Clock, Sun, Lightbulb, Volume2, Moon, Sunrise, Timer, Thermometer, ArrowUp, ArrowDown, Minus, Droplets } from 'lucide-react-native';
@@ -33,101 +33,101 @@ const staticData = {
 };
 
 // Default chart data structure
-  const defaultChartData = {
+const defaultChartData = {
   labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [{
+  datasets: [{
     data: [85, 90, 75, 80, 88, 82, 87]
   }]
 };
 
-  // Chart configurations
-  const baseChartConfig = {
-    backgroundColor: '#0F172A',
-    backgroundGradientFrom: '#0F172A',
-    backgroundGradientTo: '#0F172A',
-    decimalPlaces: 0,
-    style: {
-      borderRadius: 16,
-    },
-    propsForLabels: {
-      fontSize: Math.min(12, screenWidth / 35),
-      fill: '#94A3B8',
-    },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: '3,3',
-      stroke: '#334155',
-    },
-    paddingLeft: 15,
-    paddingRight: 15,
-  };
+// Chart configurations
+const baseChartConfig = {
+  backgroundColor: '#0F172A',
+  backgroundGradientFrom: '#0F172A',
+  backgroundGradientTo: '#0F172A',
+  decimalPlaces: 0,
+  style: {
+    borderRadius: 16,
+  },
+  propsForLabels: {
+    fontSize: Math.min(12, screenWidth / 35),
+    fill: '#94A3B8',
+  },
+  propsForDots: {
+    r: '4',
+    strokeWidth: '2',
+  },
+  propsForBackgroundLines: {
+    strokeDasharray: '3,3',
+    stroke: '#334155',
+  },
+  paddingLeft: 15,
+  paddingRight: 15,
+};
 
-  const chartConfigs = {
-    sleepQuality: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#06B6D4',
-      },
+const chartConfigs = {
+  sleepQuality: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(6, 182, 212, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#06B6D4',
     },
-    lightLevel: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#F59E0B',
-      },
+  },
+  lightLevel: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(245, 158, 11, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#F59E0B',
     },
-    noiseLevel: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#6366F1',
-      },
+  },
+  noiseLevel: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#6366F1',
     },
-    temperature: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#EC4899',
-      },
+  },
+  temperature: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(236, 72, 153, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#EC4899',
     },
-    humidity: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#0EA5E9',
-      },
+  },
+  humidity: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#0EA5E9',
     },
-    avgDuration: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(132, 204, 22, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#84CC16',
-      },
-      formatYLabel: (value) => {
-        const [hours, minutes] = value.toString().split('.');
-        return `${hours}.${minutes}`;
-      },
-      decimalPlaces: 2,
+  },
+  avgDuration: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(132, 204, 22, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#84CC16',
     },
-    sleepCycles: {
-      ...baseChartConfig,
-      color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-      propsForDots: {
-        ...baseChartConfig.propsForDots,
-        stroke: '#F97316',
-      },
+    formatYLabel: (value) => {
+      const [hours, minutes] = value.toString().split('.');
+      return `${hours}.${minutes}`;
     },
-  };
+    decimalPlaces: 2,
+  },
+  sleepCycles: {
+    ...baseChartConfig,
+    color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
+    propsForDots: {
+      ...baseChartConfig.propsForDots,
+      stroke: '#F97316',
+    },
+  },
+};
 
 // Update TrendIndicator component to handle optimal values
 const TrendIndicator = ({ currentValue, previousValue, inverted = false, optimalValue, isAboveOptimal, isBelowOptimal }) => {
@@ -247,22 +247,22 @@ export default function Stats() {
         currentValue: currentRecord.quality,
         previousValue: weeklyAverages.quality
       },
-            lightLevel: {
+      lightLevel: {
         currentValue: currentRecord.environmental.light,
         previousValue: weeklyAverages.light
-            },
-            noiseLevel: {
+      },
+      noiseLevel: {
         currentValue: currentRecord.environmental.noise,
         previousValue: weeklyAverages.noise
-            },
-            temperature: {
+      },
+      temperature: {
         currentValue: currentRecord.environmental.temperature,
         previousValue: weeklyAverages.temperature,
         optimalValue: optimalValues.temperature,
         isAboveOptimal: currentRecord.environmental.temperature > optimalValues.temperature,
         isBelowOptimal: currentRecord.environmental.temperature < optimalValues.temperature
-            },
-            humidity: {
+      },
+      humidity: {
         currentValue: currentRecord.environmental.humidity,
         previousValue: weeklyAverages.humidity,
         optimalValue: optimalValues.humidity,
@@ -302,7 +302,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => {
           // Ensure we have a valid duration value
           const duration = r.duration || 0;
@@ -321,7 +321,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => r.cycles)
       }]
     };
@@ -332,7 +332,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => r.environmental.light)
       }]
     };
@@ -342,7 +342,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => r.environmental.noise)
       }]
     };
@@ -352,7 +352,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => r.environmental.temperature)
       }]
     };
@@ -362,7 +362,7 @@ export default function Stats() {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
-    datasets: [{
+      datasets: [{
         data: latestRecords.map(r => r.environmental.humidity)
       }]
     };
@@ -564,7 +564,7 @@ export default function Stats() {
       <View style={styles.chartCard}>
         <View style={styles.chartTitleContainer}>
           <View style={styles.chartTitleLeft}>
-          <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
+            <Lightbulb size={24} color="#F59E0B" style={styles.chartIcon} />
             <View>
               <Text style={styles.chartTitle}>Light Level (lux)</Text>
             </View>
