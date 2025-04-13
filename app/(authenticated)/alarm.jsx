@@ -70,32 +70,22 @@ export default function Alarm() {
             <Brain size={24} color="#3B82F6" />
           </View>
         </View>
-        <View style={styles.sleepInfoContent}>
-          <View style={styles.sleepTimeContainer}>
-            <View style={styles.sleepTimeItem}>
-              <View style={styles.sleepTimeIconContainer}>
-                <Moon size={20} color="#94A3B8" />
+        <View style={styles.cyclesContainer}>
+          <View style={styles.cycleItem}>
+            <View style={styles.cycleValueContainer}>
+              <Text style={styles.cycleValue}>23:30</Text>
             </View>
-              <View style={styles.sleepTimeTextContainer}>
-                <Text style={styles.sleepTimeLabel}>Bedtime</Text>
-                <Text style={styles.sleepTimeValue}>23:00</Text>
-                <Text style={styles.sleepTimeNote}>Based on your sleep patterns</Text>
-              </View>
+            <Text style={styles.cycleLabel}>Bedtime</Text>
+          </View>
+          <View style={styles.cycleDivider} />
+          <View style={styles.cycleItem}>
+            <View style={styles.cycleValueContainer}>
+              <Text style={styles.cycleValue}>07:30</Text>
             </View>
-            <View style={styles.sleepTimeDivider} />
-            <View style={styles.sleepTimeItem}>
-              <View style={styles.sleepTimeIconContainer}>
-                <Sun size={20} color="#94A3B8" />
-              </View>
-              <View style={styles.sleepTimeTextContainer}>
-                <Text style={styles.sleepTimeLabel}>Wake up</Text>
-                <Text style={styles.sleepTimeValue}>07:30</Text>
-                <Text style={styles.sleepTimeNote}>Optimized for your sleep cycles</Text>
-              </View>
-            </View>
+            <Text style={styles.cycleLabel}>Wake up</Text>
           </View>
         </View>
-            </View>
+      </View>
     </ScrollView>
   );
 }
@@ -331,109 +321,32 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     marginTop: 2,
   },
-  sleepInfoContent: {
-    gap: 16,
-  },
-  sleepTimeContainer: {
+  cyclesContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.4)',
   },
-  sleepTimeItem: {
-    flex: 1,
-    flexDirection: 'row',
+  cycleItem: {
     alignItems: 'center',
-    gap: 12,
-  },
-  sleepTimeIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.4)',
-  },
-  sleepTimeTextContainer: {
     flex: 1,
   },
-  sleepTimeLabel: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginBottom: 2,
-  },
-  sleepTimeValue: {
-    fontSize: 20,
-    fontWeight: '600',
+  cycleValue: {
+    fontSize: 32,
+    fontWeight: '700',
     color: '#E2E8F0',
   },
-  sleepTimeNote: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  sleepTimeDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(51, 65, 85, 0.4)',
-    marginHorizontal: 16,
-  },
-  sleepDurationContainer: {
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(51, 65, 85, 0.4)',
-    alignItems: 'center',
-  },
-  sleepDurationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  sleepDurationLabel: {
+  cycleLabel: {
     fontSize: 14,
     color: '#94A3B8',
-    marginBottom: 4,
-  },
-  sleepDurationValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#3B82F6',
-    textShadowColor: 'rgba(59, 130, 246, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  sleepDurationNote: {
-    fontSize: 12,
-    color: '#64748B',
     marginTop: 4,
-    fontStyle: 'italic',
   },
-  aiBadge: {
+  cycleValueContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
-    gap: 4,
+    alignItems: 'baseline',
   },
-  aiBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#3B82F6',
-    textTransform: 'uppercase',
-  }
+  cycleDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#334155',
+  },
 }); 

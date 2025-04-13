@@ -489,7 +489,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 80% or higher sleep quality</Text>
+        <Text style={styles.chartTarget}>Aim for: 80% or higher</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -512,7 +512,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 8 hours of sleep per night</Text>
+        <Text style={styles.chartTarget}>Aim for: 8 hours per night</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -535,7 +535,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 5 complete sleep cycles per night</Text>
+        <Text style={styles.chartTarget}>Aim for: 5 complete cycles</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -558,7 +558,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: Below 30 decibels (quiet environment)</Text>
+        <Text style={styles.chartTarget}>Aim for: Below 30 decibels</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -581,7 +581,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: Minimal light exposure during sleep</Text>
+        <Text style={styles.chartTarget}>Aim for: Minimal light exposure</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -604,7 +604,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 20°C (68°F) room temperature</Text>
+        <Text style={styles.chartTarget}>Aim for: 20°C room temperature</Text>
       </View>
 
       <View style={styles.chartCard}>
@@ -627,7 +627,7 @@ export default function Stats() {
             style={styles.chart}
           />
         </View>
-        <Text style={styles.chartTarget}>Aim for: 50% relative humidity</Text>
+        <Text style={styles.chartTarget}>Aim for: 50% humidity</Text>
       </View>
     </ScrollView>
   );
@@ -697,7 +697,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     gap: 12,
   },
   metricCard: {
@@ -710,12 +710,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(51, 65, 85, 0.3)',
   },
   metricCardSleepQuality: {
-    borderColor: '#06B6D4',
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
   },
   metricCardDuration: {
-    borderColor: '#84CC16',
-    backgroundColor: 'rgba(132, 204, 22, 0.1)',
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
   },
   metricIconContainer: {
     width: 48,
