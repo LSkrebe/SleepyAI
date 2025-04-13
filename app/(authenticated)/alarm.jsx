@@ -366,7 +366,9 @@ export default function Alarm() {
             </View>
             <Text style={styles.cycleLabel}>Bedtime</Text>
             {showRecommendation && recommendedBedTime && recommendedBedTime !== bedTime && (
-              <Text style={styles.recommendationText}>Recommended: {recommendedBedTime}</Text>
+              <View style={styles.recommendationContainer}>
+                <Text style={styles.recommendationText}>Recommended: {recommendedBedTime}</Text>
+              </View>
             )}
           </TouchableOpacity>
           <View style={styles.cycleDivider} />
@@ -379,7 +381,9 @@ export default function Alarm() {
             </View>
             <Text style={styles.cycleLabel}>Wake up</Text>
             {showRecommendation && recommendedWakeTime && recommendedWakeTime !== wakeTime && (
-              <Text style={styles.recommendationText}>Recommended: {recommendedWakeTime}</Text>
+              <View style={styles.recommendationContainer}>
+                <Text style={styles.recommendationText}>Recommended: {recommendedWakeTime}</Text>
+              </View>
             )}
           </TouchableOpacity>
         </View>
@@ -672,6 +676,7 @@ const styles = StyleSheet.create({
   cycleItem: {
     alignItems: 'center',
     flex: 1,
+    paddingVertical: 8,
   },
   cycleValue: {
     fontSize: 32,
@@ -692,10 +697,15 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#334155',
   },
+  recommendationContainer: {
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
   recommendationText: {
     fontSize: 12,
     color: '#3B82F6',
-    marginTop: 4,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   recommendationButton: {
     flexDirection: 'row',
