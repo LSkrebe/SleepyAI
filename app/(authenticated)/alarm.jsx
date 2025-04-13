@@ -165,7 +165,7 @@ export default function Alarm() {
             return newRecommendations;
           });
           setShowRecommendation(false);
-        } else {
+    } else {
           // Store recommendations if they differ
           setRecommendations(prev => ({
             ...prev,
@@ -484,8 +484,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -50,
     right: -50,
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     backgroundColor: '#3B82F6',
     borderRadius: 100,
     opacity: 0.1,

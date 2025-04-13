@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Modal, TextInput, Dimensions } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock, ChevronDown } from 'lucide-react-native';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock, ChevronDown, Brain, Activity } from 'lucide-react-native';
 import { useAuth } from '../../context/AuthContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS = {
 };
 
 const CustomToggle = ({ value, onValueChange }) => {
-  const toggleAnimation = React.useRef(new Animated.Value(value ? 1 : 0)).current;
+  const toggleAnimation = useRef(new Animated.Value(value ? 1 : 0)).current;
 
   React.useEffect(() => {
     Animated.spring(toggleAnimation, {
@@ -71,11 +71,46 @@ export default function Settings() {
   const [customMinutes, setCustomMinutes] = useState('00');
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
+  
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(100)).current;
+  const slideUpAnim2 = useRef(new Animated.Value(100)).current;
+  const slideUpAnim3 = useRef(new Animated.Value(100)).current;
 
   const { logout, user } = useAuth();
 
   useEffect(() => {
     loadSettings();
+    
+    // Start animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideUpAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideUpAnim2, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        delay: 200,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideUpAnim3, {
+        toValue: 0,
+        tension: 50,
+        friction: 7,
+        delay: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const loadSettings = async () => {
@@ -120,36 +155,37 @@ export default function Settings() {
     });
   };
 
-  const renderSection = (title, children) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
-
   return (
     <ScrollView 
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
+        <View style={styles.headerBackground}>
+          <View style={styles.headerGlow} />
+        </View>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Settings</Text>
           <View style={styles.titleDecoration} />
           <Text style={styles.subtitle}>Customize your sleep experience</Text>
         </View>
-        <View style={styles.headerBackground}>
-          <View style={styles.headerGlow} />
-        </View>
-      </View>
+      </Animated.View>
 
-      {renderSection('Sleep Tracking', (
+      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim }] }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderContent}>
+            <Text style={styles.cardTitle}>Sleep Tracking</Text>
+            <Text style={styles.cardSubtitle}>Configure your sleep detection</Text>
+          </View>
+          <View style={styles.cardIconContainer}>
+            <Moon size={24} color="#3B82F6" />
+          </View>
+        </View>
+        
         <View style={styles.settingItem}>
           <View style={styles.settingItemLeft}>
             <View style={styles.iconContainer}>
-              <Moon size={20} color="#3B82F6" />
+              <Brain size={20} color="#3B82F6" />
             </View>
             <View style={styles.settingItemContent}>
               <Text style={styles.settingItemTitle}>Sleep Detection</Text>
@@ -161,47 +197,66 @@ export default function Settings() {
             onValueChange={() => toggleSetting('sleepDetection')} 
           />
         </View>
-      ))}
+      </Animated.View>
 
-      {renderSection('Notifications', (
-        <>
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Bell size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Sleep Reminders</Text>
-                <Text style={styles.settingItemDescription}>Get notified when it's time to sleep</Text>
-              </View>
-            </View>
-            <CustomToggle 
-              value={settings.sleepReminders} 
-              onValueChange={() => toggleSetting('sleepReminders')} 
-            />
+      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim2 }] }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderContent}>
+            <Text style={styles.cardTitle}>Notifications</Text>
+            <Text style={styles.cardSubtitle}>Manage your sleep reminders</Text>
           </View>
-          <View style={styles.settingItem}>
-            <View style={styles.settingItemLeft}>
-              <View style={styles.iconContainer}>
-                <Bell size={20} color="#3B82F6" />
-              </View>
-              <View style={styles.settingItemContent}>
-                <Text style={styles.settingItemTitle}>Wake Up Reminders</Text>
-                <Text style={styles.settingItemDescription}>Get notified when it's time to wake up</Text>
-              </View>
-            </View>
-            <CustomToggle 
-              value={settings.wakeUpReminders} 
-              onValueChange={() => toggleSetting('wakeUpReminders')} 
-            />
+          <View style={styles.cardIconContainer}>
+            <Bell size={24} color="#3B82F6" />
           </View>
-        </>
-      ))}
-
-      {renderSection('Account', (
-        <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+        </View>
+        
+        <View style={styles.settingItem}>
           <View style={styles.settingItemLeft}>
             <View style={styles.iconContainer}>
+              <Moon size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.settingItemContent}>
+              <Text style={styles.settingItemTitle}>Sleep Reminders</Text>
+              <Text style={styles.settingItemDescription}>Get notified when it's time to sleep</Text>
+            </View>
+          </View>
+          <CustomToggle 
+            value={settings.sleepReminders} 
+            onValueChange={() => toggleSetting('sleepReminders')} 
+          />
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingItemLeft}>
+            <View style={styles.iconContainer}>
+              <Sun size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.settingItemContent}>
+              <Text style={styles.settingItemTitle}>Wake Up Reminders</Text>
+              <Text style={styles.settingItemDescription}>Get notified when it's time to wake up</Text>
+            </View>
+          </View>
+          <CustomToggle 
+            value={settings.wakeUpReminders} 
+            onValueChange={() => toggleSetting('wakeUpReminders')} 
+          />
+        </View>
+      </Animated.View>
+
+      <Animated.View style={[styles.card, { transform: [{ translateY: slideUpAnim3 }] }]}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderContent}>
+            <Text style={styles.cardTitle}>Account</Text>
+            <Text style={styles.cardSubtitle}>Manage your account settings</Text>
+          </View>
+          <View style={styles.cardIconContainer}>
+            <SettingsIcon size={24} color="#3B82F6" />
+          </View>
+        </View>
+        
+        <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+          <View style={styles.settingItemLeft}>
+            <View style={[styles.iconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
               <LogOut size={20} color="#EF4444" />
             </View>
             <View style={styles.settingItemContent}>
@@ -211,7 +266,7 @@ export default function Settings() {
           </View>
           <ChevronRight size={20} color="#EF4444" />
         </TouchableOpacity>
-      ))}
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -222,11 +277,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
   },
   contentContainer: {
-    paddingBottom: 50,
+    paddingBottom: 64,
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 40,
     paddingHorizontal: 16,
     backgroundColor: '#0F172A',
     position: 'relative',
@@ -244,8 +299,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -50,
     right: -50,
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     backgroundColor: '#3B82F6',
     borderRadius: 100,
     opacity: 0.1,
@@ -274,18 +329,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#94A3B8',
     marginTop: 8,
+    letterSpacing: 0.5,
   },
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 16,
+  card: {
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
   },
-  sectionHeader: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
-  sectionTitle: {
+  cardHeaderContent: {
+    flex: 1,
+  },
+  cardTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#E2E8F0',
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  cardIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   settingItem: {
     flexDirection: 'row',
@@ -293,9 +375,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.4)',
   },
   settingItemLeft: {
     flexDirection: 'row',
@@ -310,6 +394,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
   },
   settingItemContent: {
     flex: 1,

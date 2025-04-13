@@ -462,7 +462,7 @@ export default function Journal() {
             </Text>
           </View>
           <View style={styles.todayIconContainer}>
-            <Moon size={28} color="#3B82F6" />
+            <Moon size={24} color="#3B82F6" />
           </View>
         </View>
 
@@ -480,7 +480,7 @@ export default function Journal() {
           <View style={styles.metricsGrid}>
             <View style={[styles.metricItem, styles.metricItemDuration]}>
               <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(132, 204, 22, 0.1)' }]}>
-                <Timer size={20} color="#84CC16" />
+                <Timer size={24} color="#84CC16" />
               </View>
               <View style={styles.metricContent}>
                 <View style={styles.metricValueContainer}>
@@ -491,7 +491,7 @@ export default function Journal() {
             </View>
             <View style={[styles.metricItem, styles.metricItemQuality]}>
               <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(6, 182, 212, 0.1)' }]}>
-                <Brain size={20} color="#06B6D4" />
+                <Brain size={24} color="#06B6D4" />
               </View>
               <View style={styles.metricContent}>
                 <View style={styles.metricValueContainer}>
@@ -511,7 +511,7 @@ export default function Journal() {
             <Text style={styles.insightsSubtitle}>Your sleep stages</Text>
           </View>
           <View style={styles.todayIconContainer}>
-            <Timer size={28} color="#3B82F6" />
+            <Timer size={24} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.cyclesContainer}>
@@ -540,13 +540,13 @@ export default function Journal() {
             <Text style={styles.environmentSubtitle}>Latest record</Text>
           </View>
           <View style={styles.environmentIconContainer}>
-            <Activity size={28} color="#3B82F6" />
+            <Activity size={24} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.metricsGrid}>
           <View style={[styles.metricItem, styles.metricItemTemperature]}>
             <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(236, 72, 153, 0.1)' }]}>
-              <Thermometer size={20} color="#EC4899" />
+              <Thermometer size={24} color="#EC4899" />
             </View>
             <View style={styles.metricContent}>
               <Text style={styles.metricValue}>{temperature}°C</Text>
@@ -555,7 +555,7 @@ export default function Journal() {
           </View>
           <View style={[styles.metricItem, styles.metricItemHumidity]}>
             <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(14, 165, 233, 0.1)' }]}>
-              <Droplets size={20} color="#0EA5E9" />
+              <Droplets size={24} color="#0EA5E9" />
             </View>
             <View style={styles.metricContent}>
               <Text style={styles.metricValue}>{humidity}%</Text>
@@ -564,7 +564,7 @@ export default function Journal() {
           </View>
           <View style={[styles.metricItem, styles.metricItemNoise]}>
             <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(99, 102, 241, 0.1)' }]}>
-              <Volume2 size={20} color="#6366F1" />
+              <Volume2 size={24} color="#6366F1" />
             </View>
             <View style={styles.metricContent}>
               <Text style={styles.metricValue}>{noise} dB</Text>
@@ -573,7 +573,7 @@ export default function Journal() {
           </View>
           <View style={[styles.metricItem, styles.metricItemLight]}>
             <View style={[styles.metricIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
-              <Sun size={20} color="#F59E0B" />
+              <Sun size={24} color="#F59E0B" />
             </View>
             <View style={styles.metricContent}>
               <Text style={styles.metricValue}>{light} lux</Text>
@@ -590,7 +590,7 @@ export default function Journal() {
             <Text style={styles.insightsSubtitle}>Wake-up time</Text>
           </View>
           <View style={styles.todayIconContainer}>
-            <BellRing size={28} color="#3B82F6" />
+            <BellRing size={24} color="#3B82F6" />
           </View>
         </View>
         <View style={styles.alarmContent}>
@@ -651,8 +651,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -50,
     right: -50,
-    width: 200,
-    height: 200,
+    width: 180,
+    height: 180,
     backgroundColor: '#3B82F6',
     borderRadius: 100,
     opacity: 0.1,
