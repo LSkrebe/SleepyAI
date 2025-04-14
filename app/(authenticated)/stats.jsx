@@ -225,7 +225,25 @@ export default function Stats() {
     // Calculate weekly averages
     const weeklyAverages = {
       quality: weeklyRecords.reduce((sum, r) => sum + r.quality, 0) / (weeklyRecords.length || 1),
-      duration: weeklyRecords.reduce((sum, r) => sum + r.duration, 0) / (weeklyRecords.length || 1),
+      duration: weeklyRecords.reduce((sum, r) => {
+        // Use actualSleep data for duration calculation if available
+        if (r.actualSleep && r.actualSleep.start && r.actualSleep.end) {
+          const [startHours, startMinutes] = r.actualSleep.start.split(':').map(Number);
+          const [endHours, endMinutes] = r.actualSleep.end.split(':').map(Number);
+          
+          let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+          
+          // Handle overnight case
+          if (duration < 0) {
+            duration += 24 * 60; // Add 24 hours worth of minutes
+          }
+          
+          return sum + duration;
+        } else {
+          // Fallback to the duration field if actualSleep data is not available
+          return sum + (r.duration || 0);
+        }
+      }, 0) / (weeklyRecords.length || 1),
       cycles: weeklyRecords.reduce((sum, r) => sum + r.cycles, 0) / (weeklyRecords.length || 1),
       temperature: weeklyRecords.reduce((sum, r) => sum + r.environmental.temperature, 0) / (weeklyRecords.length || 1),
       humidity: weeklyRecords.reduce((sum, r) => sum + r.environmental.humidity, 0) / (weeklyRecords.length || 1),
@@ -270,11 +288,53 @@ export default function Stats() {
         isBelowOptimal: currentRecord.environmental.humidity < optimalValues.humidity
       },
       avgDuration: {
-        currentValue: currentRecord.duration,
+        currentValue: currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
+          ? (() => {
+              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
+              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
+              
+              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+              
+              // Handle overnight case
+              if (duration < 0) {
+                duration += 24 * 60; // Add 24 hours worth of minutes
+              }
+              
+              return duration;
+            })()
+          : currentRecord.duration,
         previousValue: weeklyAverages.duration,
         optimalValue: optimalValues.duration,
-        isAboveOptimal: currentRecord.duration > optimalValues.duration,
-        isBelowOptimal: currentRecord.duration < optimalValues.duration
+        isAboveOptimal: (currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
+          ? (() => {
+              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
+              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
+              
+              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+              
+              // Handle overnight case
+              if (duration < 0) {
+                duration += 24 * 60; // Add 24 hours worth of minutes
+              }
+              
+              return duration;
+            })()
+          : currentRecord.duration) > optimalValues.duration,
+        isBelowOptimal: (currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
+          ? (() => {
+              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
+              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
+              
+              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+              
+              // Handle overnight case
+              if (duration < 0) {
+                duration += 24 * 60; // Add 24 hours worth of minutes
+              }
+              
+              return duration;
+            })()
+          : currentRecord.duration) < optimalValues.duration
       },
       sleepCycles: {
         currentValue: currentRecord.cycles,
@@ -304,8 +364,24 @@ export default function Stats() {
       }),
       datasets: [{
         data: latestRecords.map(r => {
-          // Ensure we have a valid duration value
-          const duration = r.duration || 0;
+          // Use actualSleep data for duration calculation if available
+          let duration = 0;
+          
+          if (r.actualSleep && r.actualSleep.start && r.actualSleep.end) {
+            const [startHours, startMinutes] = r.actualSleep.start.split(':').map(Number);
+            const [endHours, endMinutes] = r.actualSleep.end.split(':').map(Number);
+            
+            duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+            
+            // Handle overnight case
+            if (duration < 0) {
+              duration += 24 * 60; // Add 24 hours worth of minutes
+            }
+          } else {
+            // Fallback to the duration field if actualSleep data is not available
+            duration = r.duration || 0;
+          }
+          
           // Convert minutes to hours and minutes
           const hours = Math.floor(duration / 60);
           const minutes = duration % 60;
@@ -386,7 +462,28 @@ export default function Stats() {
       if (records.length > 0) {
         // Calculate averages
         const totalQuality = records.reduce((sum, record) => sum + record.quality, 0);
-        const totalDuration = records.reduce((sum, record) => sum + record.duration, 0);
+        
+        // Use actualSleep data for duration calculation if available
+        const totalDuration = records.reduce((sum, record) => {
+          // If actualSleep data is available, calculate duration from it
+          if (record.actualSleep && record.actualSleep.start && record.actualSleep.end) {
+            const [startHours, startMinutes] = record.actualSleep.start.split(':').map(Number);
+            const [endHours, endMinutes] = record.actualSleep.end.split(':').map(Number);
+            
+            let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+            
+            // Handle overnight case
+            if (duration < 0) {
+              duration += 24 * 60; // Add 24 hours worth of minutes
+            }
+            
+            return sum + duration;
+          } else {
+            // Fallback to the duration field if actualSleep data is not available
+            return sum + (record.duration || 0);
+          }
+        }, 0);
+        
         const totalCycles = records.reduce((sum, record) => sum + record.cycles, 0);
         
         const avgQuality = Math.round(totalQuality / records.length);

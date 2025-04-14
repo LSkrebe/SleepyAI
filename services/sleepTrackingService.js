@@ -18,6 +18,7 @@ class SleepTrackingService {
     this.sleepData = []; // Array to store sleep data for the current window
     this.windowCheckInterval = null;
     this.eventEmitter = new EventEmitter();
+    this.sleepDetectionEnabled = true; // Default to enabled
 
     // Start periodic check for sleep window
     this.startWindowCheck();
@@ -26,13 +27,16 @@ class SleepTrackingService {
   startWindowCheck() {
     // Check every minute if we should start/stop tracking
     this.windowCheckInterval = setInterval(() => {
-      if (this.currentDayEnabled) {
+      if (this.currentDayEnabled && this.sleepDetectionEnabled) {
         const isWithin = this.isWithinSleepWindow();
         if (isWithin && !this.isTracking) {
           this.startTracking();
         } else if (!isWithin && this.isTracking) {
           this.stopTracking();
         }
+      } else if (this.isTracking) {
+        // If sleep detection is disabled or current day is disabled, stop tracking
+        this.stopTracking();
       }
     }, 60000); // Check every minute
   }
@@ -184,6 +188,7 @@ class SleepTrackingService {
   startTracking() {
     if (this.isTracking) return;
     if (!this.currentDayEnabled) return;
+    if (!this.sleepDetectionEnabled) return;
     if (!this.isWithinSleepWindow()) return;
 
     // Reset sleep data when starting new tracking session
@@ -248,7 +253,7 @@ class SleepTrackingService {
     }
 
     try {
-      // Calculate sleep duration
+      // Calculate tracking window duration (for reference)
       const firstTime = this.sleepData[0].time;
       const lastTime = this.sleepData[this.sleepData.length - 1].time;
       
@@ -256,12 +261,12 @@ class SleepTrackingService {
       const [firstHours, firstMinutes] = firstTime.split(':').map(Number);
       const [lastHours, lastMinutes] = lastTime.split(':').map(Number);
       
-      // Calculate total minutes
-      let totalMinutes = (lastHours * 60 + lastMinutes) - (firstHours * 60 + firstMinutes);
+      // Calculate total minutes for tracking window
+      let trackingWindowMinutes = (lastHours * 60 + lastMinutes) - (firstHours * 60 + firstMinutes);
       
       // Handle overnight case
-      if (totalMinutes < 0) {
-        totalMinutes += 24 * 60; // Add 24 hours worth of minutes
+      if (trackingWindowMinutes < 0) {
+        trackingWindowMinutes += 24 * 60; // Add 24 hours worth of minutes
       }
 
       // Calculate average environmental data
@@ -307,6 +312,9 @@ Analyze the following sleep data and provide:
    - Count the number of complete sleep cycles
    - A cycle is counted when sleep quality transitions from high to low and back to high
 3. A recommendation for the sleep window if needed
+4. Actual sleep start and end times:
+   - Identify when the user actually fell asleep (not just when tracking started)
+   - Identify when the user actually woke up (not just when tracking ended)
 
 Rules for sleep quality scoring:
 - Score based on:
@@ -314,6 +322,9 @@ Rules for sleep quality scoring:
   * Phone charging state
   * Phone usage state
   * Environmental factors
+- ONLY create quality scores for the actual sleep period, not the entire tracking window
+- If the user didn't fall asleep immediately when tracking started, don't include those early data points
+- If the user woke up before tracking ended, don't include those later data points
 - Provide a maximum of 12 data points
 - Higher scores indicate better sleep quality
 - Above 70 is considered deep sleep
@@ -327,7 +338,7 @@ Rules for sleep window recommendation:
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
 
 Expected format (exactly like this, no extra characters):
-{"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"}}`
+{"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"actualSleep":{"start":"HH:MM:SS","end":"HH:MM:SS"}}`
           }, {
             role: "user",
             content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
@@ -382,13 +393,29 @@ ${this.sleepData.map(point =>
         scores: analysis.scores,
         cycles: analysis.cycles,
         environmental: environmentalData,
-        sleepDuration: totalMinutes
+        sleepDuration: trackingWindowMinutes, // Keep tracking window duration for backward compatibility
+        actualSleep: analysis.actualSleep || { start: firstTime, end: lastTime }
       });
+
+      // Calculate actual sleep duration based on actualSleep times
+      let actualSleepDuration = trackingWindowMinutes; // Default to tracking window duration
+      
+      if (analysis.actualSleep && analysis.actualSleep.start && analysis.actualSleep.end) {
+        const [startHours, startMinutes] = analysis.actualSleep.start.split(':').map(Number);
+        const [endHours, endMinutes] = analysis.actualSleep.end.split(':').map(Number);
+        
+        actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+        
+        // Handle overnight case
+        if (actualSleepDuration < 0) {
+          actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
+        }
+      }
 
       // After successful analysis, save the sleep record
       const sleepRecord = {
         date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-        duration: totalMinutes,
+        duration: actualSleepDuration, // Use actual sleep duration instead of tracking window
         quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
         cycles: analysis.cycles.count,
         environmental: {
@@ -396,7 +423,8 @@ ${this.sleepData.map(point =>
           humidity: environmentalAverages.humidity,
           noise: environmentalAverages.noise,
           light: environmentalAverages.light
-        }
+        },
+        actualSleep: analysis.actualSleep || { start: firstTime, end: lastTime }
       };
 
       // Save to AsyncStorage
@@ -497,6 +525,25 @@ ${this.sleepData.map(point =>
 
   offSleepRecordsUpdate(callback) {
     this.eventEmitter.off('sleepRecordsUpdate', callback);
+  }
+
+  // Add a new method to set sleep detection enabled/disabled
+  setSleepDetectionEnabled(enabled) {
+    this.sleepDetectionEnabled = enabled;
+    if (!enabled && this.isTracking) {
+      this.stopTracking();
+    }
+    // Emit event for sleep detection update
+    this.eventEmitter.emit('sleepDetectionUpdate', { enabled });
+  }
+
+  // Add methods to subscribe to sleep detection updates
+  onSleepDetectionUpdate(callback) {
+    this.eventEmitter.on('sleepDetectionUpdate', callback);
+  }
+
+  offSleepDetectionUpdate(callback) {
+    this.eventEmitter.off('sleepDetectionUpdate', callback);
   }
 }
 

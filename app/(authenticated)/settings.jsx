@@ -32,18 +32,37 @@ export default function Settings() {
   const [customMinutes, setCustomMinutes] = useState('00');
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
+  const [showSleepDetectionConfirm, setShowSleepDetectionConfirm] = useState(false);
   
   const { logout, user } = useAuth();
 
   useEffect(() => {
     loadSettings();
+    
+    // Set up listener for sleep detection updates from the service
+    const handleSleepDetectionUpdate = ({ enabled }) => {
+      setSettings(prev => ({
+        ...prev,
+        sleepDetection: enabled,
+      }));
+    };
+    
+    sleepTrackingService.onSleepDetectionUpdate(handleSleepDetectionUpdate);
+    
+    return () => {
+      sleepTrackingService.offSleepDetectionUpdate(handleSleepDetectionUpdate);
+    };
   }, []);
 
   const loadSettings = async () => {
     try {
       const savedSettings = await AsyncStorage.getItem('userSettings');
       if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+        const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
+        
+        // Sync sleep detection setting with the service
+        sleepTrackingService.setSleepDetectionEnabled(parsedSettings.sleepDetection);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -72,13 +91,44 @@ export default function Settings() {
   };
 
   const toggleSetting = (key) => {
+    if (key === 'sleepDetection' && settings.sleepDetection) {
+      // Show confirmation modal when turning off sleep detection
+      setShowSleepDetectionConfirm(true);
+    } else {
+      // For all other cases, toggle directly
+      setSettings(prev => {
+        const newSettings = {
+          ...prev,
+          [key]: !prev[key],
+        };
+        
+        // Update sleep tracking service if sleep detection is toggled
+        if (key === 'sleepDetection') {
+          sleepTrackingService.setSleepDetectionEnabled(newSettings.sleepDetection);
+        }
+        
+        return newSettings;
+      });
+    }
+  };
+
+  const confirmDisableSleepDetection = () => {
     setSettings(prev => {
       const newSettings = {
         ...prev,
-        [key]: !prev[key],
+        sleepDetection: false,
       };
+      
+      // Update sleep tracking service
+      sleepTrackingService.setSleepDetectionEnabled(false);
+      
       return newSettings;
     });
+    setShowSleepDetectionConfirm(false);
+  };
+
+  const cancelDisableSleepDetection = () => {
+    setShowSleepDetectionConfirm(false);
   };
 
   return (
@@ -108,14 +158,26 @@ export default function Settings() {
           </View>
         </View>
         
-        <View style={styles.settingItem}>
+        <View style={[
+          styles.settingItem,
+          !settings.sleepDetection && styles.settingItemDisabled
+        ]}>
           <View style={styles.settingItemLeft}>
-            <View style={styles.iconContainer}>
-              <Brain size={20} color="#3B82F6" />
+            <View style={[
+              styles.iconContainer,
+              !settings.sleepDetection && styles.iconContainerDisabled
+            ]}>
+              <Brain size={20} color={settings.sleepDetection ? "#3B82F6" : "#64748B"} />
             </View>
             <View style={styles.settingItemContent}>
-              <Text style={styles.settingItemTitle}>Sleep Detection</Text>
-              <Text style={styles.settingItemDescription}>Automatically detect when you're sleeping</Text>
+              <Text style={[
+                styles.settingItemTitle,
+                !settings.sleepDetection && styles.settingItemTitleDisabled
+              ]}>Sleep Detection</Text>
+              <Text style={[
+                styles.settingItemDescription,
+                !settings.sleepDetection && styles.settingItemDescriptionDisabled
+              ]}>Automatically detect when you're sleeping</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -131,6 +193,7 @@ export default function Settings() {
                 {
                   backgroundColor: settings.sleepDetection ? '#3B82F6' : '#64748B',
                   borderColor: settings.sleepDetection ? '#3B82F6' : '#334155',
+                  transform: [{ translateX: settings.sleepDetection ? 20 : 0 }],
                 },
               ]}
             />
@@ -149,14 +212,26 @@ export default function Settings() {
           </View>
         </View>
         
-        <View style={styles.settingItem}>
+        <View style={[
+          styles.settingItem,
+          !settings.sleepReminders && styles.settingItemDisabled
+        ]}>
           <View style={styles.settingItemLeft}>
-            <View style={styles.iconContainer}>
-              <Moon size={20} color="#3B82F6" />
+            <View style={[
+              styles.iconContainer,
+              !settings.sleepReminders && styles.iconContainerDisabled
+            ]}>
+              <Moon size={20} color={settings.sleepReminders ? "#3B82F6" : "#64748B"} />
             </View>
             <View style={styles.settingItemContent}>
-              <Text style={styles.settingItemTitle}>Sleep Reminders</Text>
-              <Text style={styles.settingItemDescription}>Get notified when it's time to sleep</Text>
+              <Text style={[
+                styles.settingItemTitle,
+                !settings.sleepReminders && styles.settingItemTitleDisabled
+              ]}>Sleep Reminders</Text>
+              <Text style={[
+                styles.settingItemDescription,
+                !settings.sleepReminders && styles.settingItemDescriptionDisabled
+              ]}>Get notified when it's time to sleep</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -172,20 +247,33 @@ export default function Settings() {
                 {
                   backgroundColor: settings.sleepReminders ? '#3B82F6' : '#64748B',
                   borderColor: settings.sleepReminders ? '#3B82F6' : '#334155',
+                  transform: [{ translateX: settings.sleepReminders ? 20 : 0 }],
                 },
               ]}
             />
           </TouchableOpacity>
         </View>
         
-        <View style={styles.settingItem}>
+        <View style={[
+          styles.settingItem,
+          !settings.wakeUpReminders && styles.settingItemDisabled
+        ]}>
           <View style={styles.settingItemLeft}>
-            <View style={styles.iconContainer}>
-              <Sun size={20} color="#3B82F6" />
+            <View style={[
+              styles.iconContainer,
+              !settings.wakeUpReminders && styles.iconContainerDisabled
+            ]}>
+              <Sun size={20} color={settings.wakeUpReminders ? "#3B82F6" : "#64748B"} />
             </View>
             <View style={styles.settingItemContent}>
-              <Text style={styles.settingItemTitle}>Wake Up Reminders</Text>
-              <Text style={styles.settingItemDescription}>Get notified when it's time to wake up</Text>
+              <Text style={[
+                styles.settingItemTitle,
+                !settings.wakeUpReminders && styles.settingItemTitleDisabled
+              ]}>Wake Up Reminders</Text>
+              <Text style={[
+                styles.settingItemDescription,
+                !settings.wakeUpReminders && styles.settingItemDescriptionDisabled
+              ]}>Get notified when it's time to wake up</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -201,6 +289,7 @@ export default function Settings() {
                 {
                   backgroundColor: settings.wakeUpReminders ? '#3B82F6' : '#64748B',
                   borderColor: settings.wakeUpReminders ? '#3B82F6' : '#334155',
+                  transform: [{ translateX: settings.wakeUpReminders ? 20 : 0 }],
                 },
               ]}
             />
@@ -232,6 +321,49 @@ export default function Settings() {
           <ChevronRight size={20} color="#EF4444" />
         </TouchableOpacity>
       </View>
+
+      {/* Sleep Detection Confirmation Modal */}
+      <Modal
+        visible={showSleepDetectionConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={cancelDisableSleepDetection}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                <Moon size={24} color="#EF4444" />
+              </View>
+              <Text style={styles.modalTitle}>Disable Sleep Detection?</Text>
+            </View>
+            
+            <Text style={styles.modalText}>
+              Disabling sleep detection will stop all sleep tracking. No new sleep data will be recorded, and your charts and statistics will not update.
+            </Text>
+            
+            <Text style={[styles.modalText, styles.modalWarning]}>
+              This feature is essential for the app's core functionality.
+            </Text>
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.cancelButton]} 
+                onPress={cancelDisableSleepDetection}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmButton]} 
+                onPress={confirmDisableSleepDetection}
+              >
+                <Text style={styles.confirmButtonText}>Disable</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -346,6 +478,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(51, 65, 85, 0.4)',
   },
+  settingItemDisabled: {
+    opacity: 0.7,
+    backgroundColor: 'rgba(15, 23, 42, 0.2)',
+  },
   settingItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -362,6 +498,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(59, 130, 246, 0.2)',
   },
+  iconContainerDisabled: {
+    backgroundColor: 'rgba(100, 116, 139, 0.1)',
+    borderColor: 'rgba(100, 116, 139, 0.2)',
+  },
   settingItemContent: {
     flex: 1,
   },
@@ -371,9 +511,15 @@ const styles = StyleSheet.create({
     color: '#E2E8F0',
     marginBottom: 4,
   },
+  settingItemTitleDisabled: {
+    color: '#94A3B8',
+  },
   settingItemDescription: {
     fontSize: 14,
     color: '#94A3B8',
+  },
+  settingItemDescriptionDisabled: {
+    color: '#64748B',
   },
   toggleContainer: {
     width: 48,
@@ -389,5 +535,83 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
+    transform: [{ translateX: 0 }],
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.5)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.2)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    flex: 1,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#94A3B8',
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  modalWarning: {
+    color: '#EF4444',
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(51, 65, 85, 0.5)',
+    marginRight: 8,
+  },
+  confirmButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    marginLeft: 8,
+  },
+  cancelButtonText: {
+    color: '#E2E8F0',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '600',
   },
 }); 

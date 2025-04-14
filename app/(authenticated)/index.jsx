@@ -203,13 +203,47 @@ export default function Journal() {
     }
 
     // Update sleep quality scores
-    if (data.scores) {
-      setSleepQualityScores(data.scores);
+    setSleepQuality(data.scores);
+    
+    // Update sleep duration based on actual sleep times
+    if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
+      const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
+      const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+      
+      let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+      
+      // Handle overnight case
+      if (duration < 0) {
+        duration += 24 * 60; // Add 24 hours worth of minutes
+      }
+      
+      setSleepDuration(duration);
+    } else {
+      // Fallback to tracking window duration if actual sleep times not available
+      setSleepDuration(data.sleepDuration);
     }
 
     // Update sleep cycles
     if (data.cycles) {
       setSleepCycles(data.cycles.count);
+      // Calculate average duration by dividing actual sleep duration by number of cycles
+      if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
+        const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
+        const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+        
+        let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+        
+        // Handle overnight case
+        if (actualSleepDuration < 0) {
+          actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
+        }
+        
+        setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
+      } else {
+        // Fallback to tracking window duration if actual sleep times not available
+        const totalMinutes = data.sleepDuration;
+        setCycleDuration(Math.round(totalMinutes / data.cycles.count));
+      }
     }
 
     // Update insights
@@ -311,18 +345,50 @@ export default function Journal() {
       const averageScore = scoresArray.reduce((sum, item) => sum + item.score, 0) / scoresArray.length;
       setSleepQuality(Math.round(averageScore));
 
-      // Update sleep duration
-      const totalMinutes = data.sleepDuration;
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-      setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
+      // Update sleep duration based on actual sleep times
+      if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
+        const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
+        const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+        
+        let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+        
+        // Handle overnight case
+        if (duration < 0) {
+          duration += 24 * 60; // Add 24 hours worth of minutes
+        }
+        
+        const hours = Math.floor(duration / 60);
+        const minutes = duration % 60;
+        setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
+      } else {
+        // Fallback to tracking window duration if actual sleep times not available
+        const totalMinutes = data.sleepDuration;
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
+      }
 
       // Update sleep cycles from API response
       if (data.cycles) {
         setSleepCycles(data.cycles.count);
-        // Calculate average duration by dividing total duration by number of cycles
-        const totalMinutes = hours * 60 + minutes;
-        setCycleDuration(Math.round(totalMinutes / data.cycles.count));
+        // Calculate average duration by dividing actual sleep duration by number of cycles
+        if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
+          const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
+          const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+          
+          let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+          
+          // Handle overnight case
+          if (actualSleepDuration < 0) {
+            actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
+          }
+          
+          setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
+        } else {
+          // Fallback to tracking window duration if actual sleep times not available
+          const totalMinutes = data.sleepDuration;
+          setCycleDuration(Math.round(totalMinutes / data.cycles.count));
+        }
       }
 
       // Update environmental metrics from the sleep data
@@ -361,9 +427,16 @@ export default function Journal() {
       // Save the updated data
       const cardData = {
         quality: Math.round(averageScore),
-        duration: `${hours}:${minutes.toString().padStart(2, '0')}`,
+        duration: data.actualSleep && data.actualSleep.start && data.actualSleep.end 
+          ? `${Math.floor((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
+              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) / 60)}:${((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
+              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) % 60).toString().padStart(2, '0')}`
+          : `${Math.floor(data.sleepDuration / 60)}:${(data.sleepDuration % 60).toString().padStart(2, '0')}`,
         cycles: data.cycles ? data.cycles.count : sleepCycles,
-        cycleDuration: data.cycles ? Math.round((hours * 60 + minutes) / data.cycles.count) : cycleDuration,
+        cycleDuration: data.cycles ? (data.actualSleep && data.actualSleep.start && data.actualSleep.end 
+          ? Math.round((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
+              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) / data.cycles.count)
+          : Math.round(data.sleepDuration / data.cycles.count)) : cycleDuration,
         temperature: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.temperature, 0) / data.environmental.length) : temperature,
         humidity: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.humidity, 0) / data.environmental.length) : humidity,
         noise: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.noise, 0) / data.environmental.length) : noise,
