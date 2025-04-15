@@ -240,8 +240,8 @@ export default function Stats() {
           
           return sum + duration;
         } else {
-          // Fallback to the duration field if actualSleep data is not available
-          return sum + (r.duration || 0);
+          // Skip records without actual sleep data
+          return sum;
         }
       }, 0) / (weeklyRecords.length || 1),
       cycles: weeklyRecords.reduce((sum, r) => sum + r.cycles, 0) / (weeklyRecords.length || 1),
@@ -378,8 +378,8 @@ export default function Stats() {
               duration += 24 * 60; // Add 24 hours worth of minutes
             }
           } else {
-            // Fallback to the duration field if actualSleep data is not available
-            duration = r.duration || 0;
+            // Skip records without actual sleep data
+            return 0;
           }
           
           // Convert minutes to hours and minutes
@@ -485,8 +485,8 @@ export default function Stats() {
             
             return sum + duration;
           } else {
-            // Fallback to the duration field if actualSleep data is not available
-            return sum + (record.duration || 0);
+            // Skip records without actual sleep data
+            return sum;
           }
         }, 0);
         

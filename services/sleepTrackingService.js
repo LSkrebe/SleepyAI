@@ -253,22 +253,6 @@ class SleepTrackingService {
     }
 
     try {
-      // Calculate tracking window duration (for reference)
-      const firstTime = this.sleepData[0].time;
-      const lastTime = this.sleepData[this.sleepData.length - 1].time;
-      
-      // Parse times into hours and minutes
-      const [firstHours, firstMinutes] = firstTime.split(':').map(Number);
-      const [lastHours, lastMinutes] = lastTime.split(':').map(Number);
-      
-      // Calculate total minutes for tracking window
-      let trackingWindowMinutes = (lastHours * 60 + lastMinutes) - (firstHours * 60 + firstMinutes);
-      
-      // Handle overnight case
-      if (trackingWindowMinutes < 0) {
-        trackingWindowMinutes += 24 * 60; // Add 24 hours worth of minutes
-      }
-
       // Calculate average environmental data
       const environmentalAverages = this.sleepData.reduce((acc, data) => {
         acc.temperature += data.environmental.temperature;
@@ -399,12 +383,11 @@ ${this.sleepData.map(point =>
         scores: analysis.scores,
         cycles: analysis.cycles,
         environmental: environmentalData,
-        sleepDuration: trackingWindowMinutes, // Keep tracking window duration for backward compatibility
-        actualSleep: analysis.actualSleep || { start: firstTime, end: lastTime }
+        actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time }
       });
 
       // Calculate actual sleep duration based on actualSleep times
-      let actualSleepDuration = trackingWindowMinutes; // Default to tracking window duration
+      let actualSleepDuration = 0;
       
       if (analysis.actualSleep && analysis.actualSleep.start && analysis.actualSleep.end) {
         const [startHours, startMinutes] = analysis.actualSleep.start.split(':').map(Number);
@@ -430,7 +413,7 @@ ${this.sleepData.map(point =>
           noise: environmentalAverages.noise,
           light: environmentalAverages.light
         },
-        actualSleep: analysis.actualSleep || { start: firstTime, end: lastTime }
+        actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time }
       };
 
       // Save to AsyncStorage
