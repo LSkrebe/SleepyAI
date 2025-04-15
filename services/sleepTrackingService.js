@@ -312,6 +312,8 @@ Analyze the following sleep data and provide:
    - Count the number of complete sleep cycles
    - A cycle is counted when sleep quality transitions from high to low and back to high
 3. A recommendation for the sleep window if needed
+   - Base your recommendation on when the user actually falls asleep, not just the set bedtime
+   - Recommend a bedtime that aligns with when the user naturally falls asleep according to the data
 4. Actual sleep start and end times:
    - Identify when the user actually fell asleep (not just when tracking started)
    - Identify when the user actually woke up (not just when tracking ended)
@@ -325,7 +327,7 @@ Rules for sleep quality scoring:
 - ONLY create quality scores for the actual sleep period, not the entire tracking window
 - If the user didn't fall asleep immediately when tracking started, don't include those early data points
 - If the user woke up before tracking ended, don't include those later data points
-- Provide a maximum of 12 data points
+- Provide a maximum of 12 key data points that represent important moments (sleep start, end, and significant quality changes)
 - Higher scores indicate better sleep quality
 - Above 70 is considered deep sleep
 
@@ -336,6 +338,9 @@ Rules for sleep cycle counting:
 Rules for sleep window recommendation:
 - Only recommend changes if you see clear patterns in the data
 - Consider the current sleep window: ${this.bedTime}-${this.wakeTime}
+- Base your recommendation on when the user actually falls asleep according to the data
+- If the user consistently falls asleep later than the set bedtime or wakes up earlier than the set wake time, recommend adjusting the bedtime or wake time to match their natural sleep pattern
+- Add some buffer time before the actual sleep start and after the actual sleep end to account for potential miscalculations and variations in sleep patterns
 
 Expected format (exactly like this, no extra characters):
 {"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"actualSleep":{"start":"HH:MM:SS","end":"HH:MM:SS"}}`
@@ -363,6 +368,7 @@ ${this.sleepData.map(point =>
           .replace(/\s*```$/, '');
         
         analysis = JSON.parse(cleanedContent);
+
       } catch (parseError) {
         console.error('Failed to parse API response:', parseError);
         return null;

@@ -460,11 +460,17 @@ export default function Stats() {
       const records = await sleepTrackingService.getSleepRecords();
       
       if (records.length > 0) {
-        // Calculate averages
-        const totalQuality = records.reduce((sum, record) => sum + record.quality, 0);
+        // Sort records by date and get the latest 7 records
+        const sortedRecords = [...records].sort((a, b) => 
+          new Date(a.date) - new Date(b.date)
+        );
+        const latestRecords = sortedRecords.slice(-7);
+        
+        // Calculate averages based on the last 7 days
+        const totalQuality = latestRecords.reduce((sum, record) => sum + record.quality, 0);
         
         // Use actualSleep data for duration calculation if available
-        const totalDuration = records.reduce((sum, record) => {
+        const totalDuration = latestRecords.reduce((sum, record) => {
           // If actualSleep data is available, calculate duration from it
           if (record.actualSleep && record.actualSleep.start && record.actualSleep.end) {
             const [startHours, startMinutes] = record.actualSleep.start.split(':').map(Number);
@@ -484,11 +490,11 @@ export default function Stats() {
           }
         }, 0);
         
-        const totalCycles = records.reduce((sum, record) => sum + record.cycles, 0);
+        const totalCycles = latestRecords.reduce((sum, record) => sum + record.cycles, 0);
         
-        const avgQuality = Math.round(totalQuality / records.length);
-        const avgDuration = totalDuration / records.length;
-        const avgCycles = Math.round(totalCycles / records.length);
+        const avgQuality = Math.round(totalQuality / latestRecords.length);
+        const avgDuration = totalDuration / latestRecords.length;
+        const avgCycles = Math.round(totalCycles / latestRecords.length);
         
         // Format duration
         const hours = Math.floor(avgDuration / 60);
