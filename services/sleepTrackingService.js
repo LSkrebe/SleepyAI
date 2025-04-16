@@ -368,13 +368,10 @@ ${this.sleepData.map(point =>
       // but don't update the current tracking session
       if (analysis.recommendation) {
         const { bedtime, waketime } = analysis.recommendation;
-        // Emit event with both current and recommended times
+        // Emit event with current times
         this.eventEmitter.emit('sleepWindowUpdate', {
           bedTime: this.bedTime,
-          wakeTime: this.wakeTime,
-          recommendedBedTime: bedtime,
-          recommendedWakeTime: waketime,
-          currentDay: this.getCurrentDay()
+          wakeTime: this.wakeTime
         });
       }
       
@@ -383,7 +380,8 @@ ${this.sleepData.map(point =>
         scores: analysis.scores,
         cycles: analysis.cycles,
         environmental: environmentalData,
-        actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time }
+        actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time },
+        recommendation: analysis.recommendation
       });
 
       // Calculate actual sleep duration based on actualSleep times

@@ -37,17 +37,13 @@ const DEFAULT_SETTINGS = {
 
 export default function Alarm() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [recommendations, setRecommendations] = useState({});
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [customHours, setCustomHours] = useState('');
   const [customMinutes, setCustomMinutes] = useState('');
   const [bedTime, setBedTime] = useState('22:00');
   const [wakeTime, setWakeTime] = useState('07:00');
-  const [recommendedBedTime, setRecommendedBedTime] = useState(null);
-  const [recommendedWakeTime, setRecommendedWakeTime] = useState(null);
   const [isCurrentDayEnabled, setIsCurrentDayEnabled] = useState(true);
-  const [showRecommendation, setShowRecommendation] = useState(false);
 
   const { user } = useAuth();
 
@@ -78,8 +74,6 @@ export default function Alarm() {
         };
         
         setSettings(validatedSettings);
-        // Set recommendations from saved settings
-        setRecommendations(validatedSettings.recommendations);
         
         // Get current day's settings
         const today = new Date().getDay();
@@ -95,14 +89,6 @@ export default function Alarm() {
             setBedTime(daySettings.bedtime);
             setWakeTime(daySettings.wakeup);
           }
-        }
-
-        // Check if there are recommendations for the current day
-        const currentDayRecommendation = validatedSettings.recommendations[currentDay.id];
-        if (currentDayRecommendation) {
-          setRecommendedBedTime(currentDayRecommendation.bedtime);
-          setRecommendedWakeTime(currentDayRecommendation.wakeup);
-          setShowRecommendation(true);
         }
       }
     } catch (error) {
@@ -131,17 +117,10 @@ export default function Alarm() {
 
   useEffect(() => {
     // Listen for sleep window updates from the service
-    const handleSleepWindowUpdate = ({ bedTime, wakeTime, recommendedBedTime, recommendedWakeTime, currentDay }) => {
+    const handleSleepWindowUpdate = ({ bedTime, wakeTime }) => {
       // Update current display times
       setBedTime(bedTime);
       setWakeTime(wakeTime);
-
-      // Store recommendations if they differ from current times
-      if (recommendedBedTime && recommendedWakeTime) {
-        setRecommendedBedTime(recommendedBedTime);
-        setRecommendedWakeTime(recommendedWakeTime);
-        setShowRecommendation(true);
-      }
     };
 
     // Listen for sleep quality updates
@@ -153,44 +132,34 @@ export default function Alarm() {
         const today = new Date().getDay();
         const adjustedDay = today === 0 ? 6 : today - 1;
         const currentDay = DAYS[adjustedDay];
-        const daySettings = settings.days[currentDay.id];
         
-        // Check if recommendations match current times
-        if (bedtime === daySettings.bedtime && waketime === daySettings.wakeup) {
-          // Clear recommendations for this day
-          setRecommendations(prev => {
-            const newRecommendations = { ...prev };
-            delete newRecommendations[currentDay.id];
-            return newRecommendations;
-          });
-          setShowRecommendation(false);
-        } else {
-          // Store recommendations if they differ
-          setRecommendations(prev => ({
+        // Immediately apply the recommendations
+        setSettings(prev => {
+          const newSettings = {
             ...prev,
-            [currentDay.id]: {
-              bedtime,
-              wakeup: waketime
-            }
-          }));
-          
-          // Update settings with new recommendations
-          setSettings(prev => ({
-            ...prev,
-            recommendations: {
-              ...prev.recommendations,
+            days: {
+              ...prev.days,
               [currentDay.id]: {
+                ...prev.days[currentDay.id],
                 bedtime,
-                wakeup: waketime
+                wakeup: waketime,
               }
             }
-          }));
-          
-          // Update local state
-          setRecommendedBedTime(bedtime);
-          setRecommendedWakeTime(waketime);
-          setShowRecommendation(true);
-        }
+          };
+
+          // Update sleep tracking service with new times
+          const daySettings = newSettings.days[currentDay.id];
+          sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
+
+          return newSettings;
+        });
+        
+        // Update local state
+        setBedTime(bedtime);
+        setWakeTime(waketime);
+        
+        // Explicitly save settings to ensure persistence
+        saveSettings();
       }
     };
 
@@ -254,46 +223,6 @@ export default function Alarm() {
       
       setShowTimePicker(false);
     }
-  };
-
-  const applyRecommendation = () => {
-    // Get current day
-    const today = new Date().getDay();
-    const adjustedDay = today === 0 ? 6 : today - 1;
-    const currentDay = DAYS[adjustedDay];
-    
-    // Update settings with recommended times
-    setSettings(prev => {
-      const newSettings = {
-        ...prev,
-        days: {
-          ...prev.days,
-          [currentDay.id]: {
-            ...prev.days[currentDay.id],
-            bedtime: recommendedBedTime,
-            wakeup: recommendedWakeTime,
-          }
-        },
-        recommendations: {
-          ...prev.recommendations,
-          [currentDay.id]: null // Clear recommendation after applying
-        }
-      };
-
-      // Update sleep tracking service with new times
-      const daySettings = newSettings.days[currentDay.id];
-      sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
-
-      return newSettings;
-    });
-    
-    // Update local state
-    setBedTime(recommendedBedTime);
-    setWakeTime(recommendedWakeTime);
-    setShowRecommendation(false);
-    
-    // Explicitly save settings to ensure persistence
-    saveSettings();
   };
 
   return (
@@ -365,11 +294,6 @@ export default function Alarm() {
               <Text style={styles.cycleValue}>{bedTime}</Text>
             </View>
             <Text style={styles.cycleLabel}>Bedtime</Text>
-            {showRecommendation && recommendedBedTime && recommendedBedTime !== bedTime && (
-              <View style={styles.recommendationContainer}>
-                <Text style={styles.recommendationText}>Recommended: {recommendedBedTime}</Text>
-              </View>
-            )}
           </TouchableOpacity>
           <View style={styles.cycleDivider} />
           <TouchableOpacity
@@ -380,24 +304,8 @@ export default function Alarm() {
               <Text style={styles.cycleValue}>{wakeTime}</Text>
             </View>
             <Text style={styles.cycleLabel}>Wake up</Text>
-            {showRecommendation && recommendedWakeTime && recommendedWakeTime !== wakeTime && (
-              <View style={styles.recommendationContainer}>
-                <Text style={styles.recommendationText}>Recommended: {recommendedWakeTime}</Text>
-              </View>
-            )}
           </TouchableOpacity>
         </View>
-
-        {showRecommendation && recommendedBedTime && recommendedWakeTime && 
-         (recommendedBedTime !== bedTime || recommendedWakeTime !== wakeTime) && (
-          <TouchableOpacity 
-            style={styles.recommendationButton}
-            onPress={applyRecommendation}
-          >
-            <Check size={16} color="#FFFFFF" />
-            <Text style={styles.recommendationButtonText}>Apply Recommendation</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <Modal
@@ -696,31 +604,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 40,
     backgroundColor: '#334155',
-  },
-  recommendationContainer: {
-    marginTop: 4,
-    paddingHorizontal: 4,
-  },
-  recommendationText: {
-    fontSize: 12,
-    color: '#3B82F6',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  recommendationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 16,
-    gap: 8,
-  },
-  recommendationButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
