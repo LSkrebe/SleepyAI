@@ -128,10 +128,11 @@ export default function Alarm() {
       if (data.recommendation) {
         const { bedtime, waketime } = data.recommendation;
         
-        // Get current day's settings
-        const today = new Date().getDay();
-        const adjustedDay = today === 0 ? 6 : today - 1;
-        const currentDay = DAYS[adjustedDay];
+        // Get the day when sleep tracking started
+        const startDate = new Date(data.startDate);
+        const startDay = startDate.getDay();
+        const adjustedDay = startDay === 0 ? 6 : startDay - 1;
+        const targetDay = DAYS[adjustedDay];
         
         // Immediately apply the recommendations
         setSettings(prev => {
@@ -139,8 +140,8 @@ export default function Alarm() {
             ...prev,
             days: {
               ...prev.days,
-              [currentDay.id]: {
-                ...prev.days[currentDay.id],
+              [targetDay.id]: {
+                ...prev.days[targetDay.id],
                 bedtime,
                 wakeup: waketime,
               }
@@ -148,15 +149,19 @@ export default function Alarm() {
           };
 
           // Update sleep tracking service with new times
-          const daySettings = newSettings.days[currentDay.id];
+          const daySettings = newSettings.days[targetDay.id];
           sleepTrackingService.setSleepWindow(daySettings.bedtime, daySettings.wakeup);
 
           return newSettings;
         });
         
-        // Update local state
-        setBedTime(bedtime);
-        setWakeTime(waketime);
+        // Update local state if this is the current day
+        const today = new Date().getDay();
+        const currentAdjustedDay = today === 0 ? 6 : today - 1;
+        if (adjustedDay === currentAdjustedDay) {
+          setBedTime(bedtime);
+          setWakeTime(waketime);
+        }
         
         // Explicitly save settings to ensure persistence
         saveSettings();

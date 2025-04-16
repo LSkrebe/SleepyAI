@@ -381,7 +381,8 @@ ${this.sleepData.map(point =>
         cycles: analysis.cycles,
         environmental: environmentalData,
         actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time },
-        recommendation: analysis.recommendation
+        recommendation: analysis.recommendation,
+        startDate: new Date().toISOString().split('T')[0] // Add the date when sleep tracking started
       });
 
       // Calculate actual sleep duration based on actualSleep times
