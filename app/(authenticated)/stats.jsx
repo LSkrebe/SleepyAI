@@ -34,10 +34,48 @@ const staticData = {
 
 // Default chart data structure
 const defaultChartData = {
-  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-  datasets: [{
-    data: [85, 90, 75, 80, 88, 82, 87]
-  }]
+  sleepQuality: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [80, 85, 75, 82, 88, 90, 85] // Sleep quality percentage (0-100)
+    }]
+  },
+  avgDuration: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [7.5, 8.0, 7.0, 7.5, 8.5, 9.0, 8.0] // Sleep duration in hours
+    }]
+  },
+  sleepCycles: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [4, 5, 4, 5, 5, 6, 5] // Number of sleep cycles
+    }]
+  },
+  lightLevel: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [12, 25, 18, 15, 28, 22, 10] // Light level (lux) - showing more variation in 10-30 range
+    }]
+  },
+  noiseLevel: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [25, 30, 28, 27, 29, 26, 28] // Noise level (dB)
+    }]
+  },
+  temperature: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [20, 21, 20, 19, 20, 21, 20] // Temperature (°C)
+    }]
+  },
+  humidity: {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      data: [45, 50, 48, 47, 49, 46, 48] // Humidity (%)
+    }]
+  }
 };
 
 // Chart configurations
@@ -190,13 +228,13 @@ export default function Stats() {
   });
 
   const [chartData, setChartData] = useState({
-    sleepQuality: defaultChartData,
-    lightLevel: defaultChartData,
-    noiseLevel: defaultChartData,
-    temperature: defaultChartData,
-    humidity: defaultChartData,
-    avgDuration: defaultChartData,
-    sleepCycles: defaultChartData
+    sleepQuality: defaultChartData.sleepQuality,
+    lightLevel: defaultChartData.lightLevel,
+    noiseLevel: defaultChartData.noiseLevel,
+    temperature: defaultChartData.temperature,
+    humidity: defaultChartData.humidity,
+    avgDuration: defaultChartData.avgDuration,
+    sleepCycles: defaultChartData.sleepCycles
   });
 
   const [trends, setTrends] = useState({
