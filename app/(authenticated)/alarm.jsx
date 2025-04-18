@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal, TextInput } from 'react-native';
 import { BellRing, ChevronDown, Clock, Sun, Moon, Sparkles, Zap, Target, Brain, Check } from 'lucide-react-native';
-import { useAuth } from '../../context/AuthContext';
+import { useDevice } from '../../context/DeviceContext';
 import sleepTrackingService from '../../services/sleepTrackingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -17,8 +17,8 @@ const DAYS = [
   { id: 'sunday', label: 'Sunday' },
 ];
 
-// Get settings storage key based on user ID
-const getSettingsStorageKey = (userId) => `@sleepyai_settings_${userId}`;
+// Get settings storage key based on device ID
+const getSettingsStorageKey = (deviceId) => `@sleepyai_settings_${deviceId}`;
 
 const DEFAULT_SETTINGS = {
   sleepDetection: true,
@@ -38,58 +38,45 @@ const DEFAULT_SETTINGS = {
 export default function Alarm() {
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
-  const [customHours, setCustomHours] = useState('');
-  const [customMinutes, setCustomMinutes] = useState('');
+  const [customHours, setCustomHours] = useState('00');
+  const [customMinutes, setCustomMinutes] = useState('00');
   const [bedTime, setBedTime] = useState('22:00');
   const [wakeTime, setWakeTime] = useState('07:00');
   const [isCurrentDayEnabled, setIsCurrentDayEnabled] = useState(true);
-
-  const { user } = useAuth();
+  const [showSleepDetectionConfirm, setShowSleepDetectionConfirm] = useState(false);
+  
+  const { deviceId } = useDevice();
 
   useEffect(() => {
-    if (user) {
-      loadSettings();
-    }
-  }, [user]);
+    loadSettings();
+    
+    // Set up listener for sleep detection updates from the service
+    const handleSleepDetectionUpdate = ({ enabled }) => {
+      setSettings(prev => ({
+        ...prev,
+        sleepDetection: enabled,
+      }));
+    };
+    
+    sleepTrackingService.onSleepDetectionUpdate(handleSleepDetectionUpdate);
+    
+    return () => {
+      sleepTrackingService.offSleepDetectionUpdate(handleSleepDetectionUpdate);
+    };
+  }, []);
 
-  // Load settings from AsyncStorage
   const loadSettings = async () => {
     try {
-      const storageKey = getSettingsStorageKey(user.uid);
+      const storageKey = getSettingsStorageKey(deviceId);
       const savedSettings = await AsyncStorage.getItem(storageKey);
-      
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
+        setSettings(parsedSettings);
         
-        // Validate and merge with default settings
-        const validatedSettings = {
-          ...DEFAULT_SETTINGS,
-          ...parsedSettings,
-          days: {
-            ...DEFAULT_SETTINGS.days,
-            ...(parsedSettings.days || {})
-          },
-          recommendations: parsedSettings.recommendations || {}
-        };
-        
-        setSettings(validatedSettings);
-        
-        // Get current day's settings
-        const today = new Date().getDay();
-        const adjustedDay = today === 0 ? 6 : today - 1;
-        const currentDay = DAYS[adjustedDay];
-        const daySettings = validatedSettings.days[currentDay.id];
-        
-        if (daySettings) {
-          // Set the enabled state for the current day
-          setIsCurrentDayEnabled(daySettings.enabled);
-          
-          if (daySettings.enabled) {
-            setBedTime(daySettings.bedtime);
-            setWakeTime(daySettings.wakeup);
-          }
-        }
+        // Sync sleep detection setting with the service
+        sleepTrackingService.setSleepDetectionEnabled(parsedSettings.sleepDetection);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -101,7 +88,7 @@ export default function Alarm() {
   // Save settings to AsyncStorage
   const saveSettings = async () => {
     try {
-      const storageKey = getSettingsStorageKey(user.uid);
+      const storageKey = getSettingsStorageKey(deviceId);
       await AsyncStorage.setItem(storageKey, JSON.stringify(settings));
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -110,10 +97,10 @@ export default function Alarm() {
 
   // Save settings whenever they change
   useEffect(() => {
-    if (user) {
+    if (deviceId) {
       saveSettings();
     }
-  }, [settings, user]);
+  }, [settings, deviceId]);
 
   useEffect(() => {
     // Listen for sleep window updates from the service

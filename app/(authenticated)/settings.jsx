@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TextInput, Dimensions } from 'react-native';
-import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, LogOut, Clock, ChevronDown, Brain, Activity } from 'lucide-react-native';
-import { useAuth } from '../../context/AuthContext';
+import { ChevronRight, Bell, Moon, Sun, Volume2, Thermometer, Lock, Battery as BatteryIcon, Download, Settings as SettingsIcon, Info, BellRing, Zap, Database, Clock, ChevronDown, Brain, Activity } from 'lucide-react-native';
+import { useDevice } from '../../context/DeviceContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
 import * as Battery from 'expo-battery';
@@ -34,7 +34,7 @@ export default function Settings() {
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [showSleepDetectionConfirm, setShowSleepDetectionConfirm] = useState(false);
   
-  const { logout, user } = useAuth();
+  const { deviceId } = useDevice();
 
   useEffect(() => {
     loadSettings();
@@ -56,7 +56,7 @@ export default function Settings() {
 
   const loadSettings = async () => {
     try {
-      const savedSettings = await AsyncStorage.getItem('userSettings');
+      const savedSettings = await AsyncStorage.getItem(`userSettings_${deviceId}`);
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings(parsedSettings);
@@ -71,7 +71,7 @@ export default function Settings() {
 
   const saveSettings = async (newSettings) => {
     try {
-      await AsyncStorage.setItem('userSettings', JSON.stringify(newSettings));
+      await AsyncStorage.setItem(`userSettings_${deviceId}`, JSON.stringify(newSettings));
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -80,15 +80,6 @@ export default function Settings() {
   useEffect(() => {
     saveSettings(settings);
   }, [settings]);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.replace('/auth/login');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
 
   const toggleSetting = (key) => {
     if (key === 'sleepDetection' && settings.sleepDetection) {
@@ -253,7 +244,7 @@ export default function Settings() {
             />
           </TouchableOpacity>
         </View>
-        
+
         <View style={[
           styles.settingItem,
           !settings.wakeUpReminders && styles.settingItemDisabled
@@ -269,7 +260,7 @@ export default function Settings() {
               <Text style={[
                 styles.settingItemTitle,
                 !settings.wakeUpReminders && styles.settingItemTitleDisabled
-              ]}>Wake Up Reminders</Text>
+              ]}>Wake-up Reminders</Text>
               <Text style={[
                 styles.settingItemDescription,
                 !settings.wakeUpReminders && styles.settingItemDescriptionDisabled
@@ -295,31 +286,6 @@ export default function Settings() {
             />
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderContent}>
-            <Text style={styles.cardTitle}>Account</Text>
-            <Text style={styles.cardSubtitle}>Manage your account settings</Text>
-          </View>
-          <View style={styles.cardIconContainer}>
-            <SettingsIcon size={24} color="#3B82F6" />
-          </View>
-        </View>
-        
-        <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
-          <View style={styles.settingItemLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
-              <LogOut size={20} color="#EF4444" />
-            </View>
-            <View style={styles.settingItemContent}>
-              <Text style={[styles.settingItemTitle, { color: '#EF4444' }]}>Logout</Text>
-              <Text style={styles.settingItemDescription}>Sign out of your account</Text>
-            </View>
-          </View>
-          <ChevronRight size={20} color="#EF4444" />
-        </TouchableOpacity>
       </View>
 
       {/* Sleep Detection Confirmation Modal */}

@@ -2,6 +2,7 @@ import { Accelerometer, Gyroscope } from 'expo-sensors';
 import Constants from 'expo-constants';
 import { EventEmitter } from 'events';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Device from 'expo-device';
 
 class SleepTrackingService {
   constructor() {
@@ -19,9 +20,30 @@ class SleepTrackingService {
     this.windowCheckInterval = null;
     this.eventEmitter = new EventEmitter();
     this.sleepDetectionEnabled = true; // Default to enabled
+    this.deviceId = null;
+
+    // Initialize device ID
+    this.initializeDeviceId();
 
     // Start periodic check for sleep window
     this.startWindowCheck();
+  }
+
+  async initializeDeviceId() {
+    try {
+      // Try to get existing device ID from storage
+      let storedDeviceId = await AsyncStorage.getItem('deviceId');
+      
+      if (!storedDeviceId) {
+        // Generate a new device ID if none exists
+        storedDeviceId = `${Device.modelName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        await AsyncStorage.setItem('deviceId', storedDeviceId);
+      }
+      
+      this.deviceId = storedDeviceId;
+    } catch (error) {
+      console.error('Error initializing device ID:', error);
+    }
   }
 
   startWindowCheck() {
@@ -415,9 +437,10 @@ ${this.sleepData.map(point =>
         actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time }
       };
 
-      // Save to AsyncStorage
+      // Save to AsyncStorage with device-specific key
       try {
-        const existingRecords = await AsyncStorage.getItem('sleepRecords');
+        const storageKey = `sleepRecords_${this.deviceId}`;
+        const existingRecords = await AsyncStorage.getItem(storageKey);
         let records = existingRecords ? JSON.parse(existingRecords) : [];
         
         // Keep only the last 7 days of records
@@ -429,7 +452,7 @@ ${this.sleepData.map(point =>
         records.push(sleepRecord);
         
         // Save updated records
-        await AsyncStorage.setItem('sleepRecords', JSON.stringify(records));
+        await AsyncStorage.setItem(storageKey, JSON.stringify(records));
         
         // Emit event with updated records
         this.eventEmitter.emit('sleepRecordsUpdate', records);
@@ -495,10 +518,11 @@ ${this.sleepData.map(point =>
     this.eventEmitter.off('sleepWindowUpdate', callback);
   }
 
-  // Add new method to get sleep records
+  // Update getSleepRecords to use device-specific storage
   async getSleepRecords() {
     try {
-      const records = await AsyncStorage.getItem('sleepRecords');
+      const storageKey = `sleepRecords_${this.deviceId}`;
+      const records = await AsyncStorage.getItem(storageKey);
       return records ? JSON.parse(records) : [];
     } catch (error) {
       console.error('Error getting sleep records:', error);

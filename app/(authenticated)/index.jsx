@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Anima
 import { Moon, Brain, Thermometer, Droplets, Volume2, Sun, Timer, BellRing, Activity } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useAlarm } from '../../context/AlarmContext';
+import { useDevice } from '../../context/DeviceContext';
 import { router } from 'expo-router';
 import sleepTrackingService from '../../services/sleepTrackingService';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +14,7 @@ const chartWidth = screenWidth - 32; // Adjusted to match stats page
 
 export default function Journal() {
   const { alarmTime, isAlarmActive } = useAlarm();
+  const { deviceId } = useDevice();
   const [sleepQuality, setSleepQuality] = useState(85);
   const [sleepDuration, setSleepDuration] = useState('7:30');
   const [temperature, setTemperature] = useState(20);
@@ -44,13 +46,25 @@ export default function Journal() {
   const slideUpAnim5 = useRef(new Animated.Value(100)).current;
 
   // Save card data to AsyncStorage
-  const saveCardData = useCallback(async (data) => {
+  const saveCardData = async () => {
     try {
-      await AsyncStorage.setItem('cardData', JSON.stringify(data));
+      const cardData = {
+        quality: sleepQuality,
+        duration: sleepDuration,
+        cycles: sleepCycles,
+        cycleDuration: cycleDuration,
+        temperature: temperature,
+        humidity: humidity,
+        noise: noise,
+        light: light,
+        insights: sleepInsights,
+        date: new Date().toISOString()
+      };
+      await AsyncStorage.setItem(`cardData_${deviceId}`, JSON.stringify(cardData));
     } catch (error) {
       console.error('Error saving card data:', error);
     }
-  }, []);
+  };
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -97,9 +111,9 @@ export default function Journal() {
     const loadSavedData = async () => {
       try {
         const [storedSleepData, storedChartData, storedCardData] = await Promise.all([
-          AsyncStorage.getItem('sleepData'),
-          AsyncStorage.getItem('chartData'),
-          AsyncStorage.getItem('cardData')
+          AsyncStorage.getItem(`sleepData_${deviceId}`),
+          AsyncStorage.getItem(`chartData_${deviceId}`),
+          AsyncStorage.getItem(`cardData_${deviceId}`)
         ]);
         
         if (storedSleepData) {
@@ -140,49 +154,16 @@ export default function Journal() {
       }
     };
     loadSavedData();
-  }, []);
+  }, [deviceId]);
 
   // Save sleep data and chart data whenever they change
   useEffect(() => {
-    const saveData = async () => {
-      try {
-        const cardData = {
-          quality: sleepQuality,
-          duration: sleepDuration,
-          cycles: sleepCycles,
-          cycleDuration: cycleDuration,
-          temperature: temperature,
-          humidity: humidity,
-          noise: noise,
-          light: light,
-          insights: sleepInsights,
-          date: latestSleepDate
-        };
-
-        await Promise.all([
-          AsyncStorage.setItem('sleepData', JSON.stringify(sleepData)),
-          AsyncStorage.setItem('chartData', JSON.stringify(sleepQualityData)),
-          AsyncStorage.setItem('cardData', JSON.stringify(cardData))
-        ]);
-      } catch (error) {
-        console.error('Error saving data:', error);
-      }
-    };
-    saveData();
-  }, [
-    sleepData, 
-    sleepQualityData, 
-    sleepQuality, 
-    sleepDuration, 
-    sleepCycles, 
-    cycleDuration,
-    temperature,
-    humidity,
-    noise,
-    light,
-    sleepInsights,
-    latestSleepDate
-  ]);
+    if (deviceId) {
+      saveCardData();
+      AsyncStorage.setItem(`sleepData_${deviceId}`, JSON.stringify(sleepData));
+      AsyncStorage.setItem(`chartData_${deviceId}`, JSON.stringify(sleepQualityData));
+    }
+  }, [sleepData, sleepQualityData, deviceId]);
 
   const handleSleepQualityUpdate = useCallback((data) => {
     // Process environmental data
@@ -247,15 +228,7 @@ export default function Journal() {
     }
 
     // Save to AsyncStorage
-    saveCardData({
-      sleepQualityScores: data.scores || {},
-      sleepCycles: data.cycles?.count || 0,
-      sleepInsights: data.insights || [],
-      temperature,
-      humidity,
-      noise,
-      light
-    });
+    saveCardData();
   }, [saveCardData, temperature, humidity, noise, light]);
 
   useEffect(() => {
@@ -430,7 +403,7 @@ export default function Journal() {
         date: sleepDateString,
         timestamp: now.getTime() // Add timestamp to ensure correct date comparison
       };
-      AsyncStorage.setItem('cardData', JSON.stringify(cardData));
+      AsyncStorage.setItem(`cardData_${deviceId}`, JSON.stringify(cardData));
     };
 
     // Set up the event listener
@@ -440,7 +413,7 @@ export default function Journal() {
     return () => {
       sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
     };
-  }, []);
+  }, [deviceId]);
 
   const chartConfig = {
     backgroundColor: '#0F172A',

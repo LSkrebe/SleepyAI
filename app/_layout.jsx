@@ -1,6 +1,6 @@
 import { Slot } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { AuthProvider } from '../context/AuthContext';
+import { DeviceProvider } from '../context/DeviceContext';
 import Constants from 'expo-constants';
 
 export default function RootLayout() {
@@ -14,9 +14,9 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="light" backgroundColor="#0F172A" />
-      <AuthProvider>
+      <DeviceProvider>
         <Slot />
-      </AuthProvider>
+      </DeviceProvider>
     </>
   );
 } 

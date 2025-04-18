@@ -55,7 +55,7 @@ const defaultChartData = {
   lightLevel: {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [{
-      data: [12, 25, 18, 15, 28, 22, 10] // Light level (lux) - showing more variation in 10-30 range
+      data: [12, 25, 18, 15, 28, 22, 10] // Light level (lux)
     }]
   },
   noiseLevel: {
@@ -561,6 +561,28 @@ export default function Stats() {
 
         // Update chart data with actual values
         updateChartData(records);
+      } else {
+        // Set default values when no records exist
+        setAverages({
+          sleepQuality: 75, // Default average sleep quality
+          sleepDuration: '7h 30m', // Default average sleep duration
+          cycles: 5, // Default number of sleep cycles
+          temperature: 20, // Default temperature
+          humidity: 50, // Default humidity
+          noise: 30, // Default noise level
+          light: 10 // Default light level
+        });
+        
+        // Use default chart data
+        setChartData({
+          sleepQuality: defaultChartData.sleepQuality,
+          lightLevel: defaultChartData.lightLevel,
+          noiseLevel: defaultChartData.noiseLevel,
+          temperature: defaultChartData.temperature,
+          humidity: defaultChartData.humidity,
+          avgDuration: defaultChartData.avgDuration,
+          sleepCycles: defaultChartData.sleepCycles
+        });
       }
     };
 
