@@ -4,7 +4,6 @@ import { DeviceProvider } from '../context/DeviceContext';
 import Constants from 'expo-constants';
 
 export default function RootLayout() {
-  // Access environment variables through Constants.expoConfig.extra
   const groqKey = Constants.expoConfig.extra.EXPO_PUBLIC_GROQ_API_KEY;
 
   if (!groqKey) {

@@ -14,8 +14,7 @@ export const DeviceProvider = ({ children }) => {
     const initializeDevice = async () => {
       try {
         // Try to get existing device ID from storage
-        let storedDeviceId = await AsyncStorage.getItem('deviceId');
-        
+        let storedDeviceId = await AsyncStorage.getItem('deviceId');        
         if (!storedDeviceId) {
           // Generate a new device ID if none exists
           storedDeviceId = `${Device.modelName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -23,9 +22,9 @@ export const DeviceProvider = ({ children }) => {
         }
         
         setDeviceId(storedDeviceId);
-        setLoading(false);
       } catch (error) {
-        console.error('Error initializing device:', error);
+        console.error('DeviceContext: Error initializing device:', error);
+      } finally {
         setLoading(false);
       }
     };
