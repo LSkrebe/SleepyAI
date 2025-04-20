@@ -1,141 +1,97 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useDevice } from '../../context/DeviceContext';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Onboarding() {
   const router = useRouter();
-  const { deviceId } = useDevice();
-  const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = [
-    {
-      title: 'Welcome to SleepyAI',
-      description: 'Your personal sleep assistant that helps you track and improve your sleep quality.',
-      icon: 'moon',
-    },
-    {
-      title: 'Smart Alarm',
-      description: 'Wake up at the perfect time in your sleep cycle for a refreshed morning.',
-      icon: 'alarm',
-    },
-    {
-      title: 'Sleep Tracking',
-      description: 'Monitor your sleep patterns and get personalized insights.',
-      icon: 'stats-chart',
-    },
+  const trustIndicators = [
+    { icon: 'shield-checkmark', text: '100% Private Analysis' },
+    { icon: 'medkit', text: 'Medical-Grade Assessment' },
+    { icon: 'time', text: '2 Minute Completion' }
   ];
 
-  const handleNext = async () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      await AsyncStorage.setItem(`onboarding_completed_${deviceId}`, 'true');
-      router.replace('/(authenticated)');
-    }
-  };
-
   return (
-    <LinearGradient
-      colors={['#0F172A', '#1E293B']}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.stepIndicator}>
-          {steps.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.indicatorDot,
-                currentStep === index && styles.activeDot,
-              ]}
-            />
+        <Text style={styles.headline}>Tired of fighting sleep?</Text>
+        <Text style={styles.subheadline}>
+          Join 100,000+ others who transformed their sleep forever
+        </Text>
+
+        <View style={styles.trustContainer}>
+          {trustIndicators.map((item, index) => (
+            <View key={index} style={styles.trustItem}>
+              <Ionicons name={item.icon} size={24} color="#4F46E5" />
+              <Text style={styles.trustText}>{item.text}</Text>
+            </View>
           ))}
         </View>
-
-        <View style={styles.stepContent}>
-          <Ionicons
-            name={steps[currentStep].icon}
-            size={80}
-            color="#60A5FA"
-            style={styles.icon}
-          />
-          <Text style={styles.title}>{steps[currentStep].title}</Text>
-          <Text style={styles.description}>{steps[currentStep].description}</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleNext}
-        >
-          <Text style={styles.buttonText}>
-            {currentStep === steps.length - 1 ? 'Get Started' : 'Next'}
-          </Text>
-        </TouchableOpacity>
       </View>
-    </LinearGradient>
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => router.push('/(onboarding)/sleep_time')}
+      >
+        <Text style={styles.buttonText}>Discover Your Sleep Score</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
+    justifyContent: 'space-between',
   },
   content: {
     flex: 1,
-    justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 60,
-    paddingBottom: 40,
-  },
-  stepIndicator: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 40,
-  },
-  indicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#334155',
-    marginHorizontal: 4,
-  },
-  activeDot: {
-    backgroundColor: '#60A5FA',
-    width: 16,
-  },
-  stepContent: {
     alignItems: 'center',
   },
-  icon: {
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 28,
+  headline: {
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 16,
   },
-  description: {
-    fontSize: 16,
-    color: '#94A3B8',
+  subheadline: {
+    fontSize: 18,
+    color: '#9CA3AF',
     textAlign: 'center',
+    marginBottom: 40,
     lineHeight: 24,
-    paddingHorizontal: 20,
+  },
+  trustContainer: {
+    width: '100%',
+    gap: 16,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    gap: 12,
+  },
+  trustText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: '#60A5FA',
+    backgroundColor: '#4F46E5',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 20,
   },
   buttonText: {
-    color: '#F8FAFC',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: '600',
   },
 }); 
