@@ -27,7 +27,7 @@ export default function PaywallScreen() {
     {
       title: 'Annual Plan',
       price: '$108.00',
-      originalPrice: '$216.00',
+      originalPrice: '$144.00',
       period: 'year',
       popular: false,
       suggestion: 'Unlock the best value with 50% savings, perfect for long-term benefits.',
@@ -37,7 +37,7 @@ export default function PaywallScreen() {
     {
       title: '6-Month Plan',
       price: '$72.00',
-      originalPrice: '$108.00',
+      originalPrice: '$90.00',
       period: '6 months',
       popular: true,
       suggestion: 'Get started with great savings and flexibility for half a year of premium sleep.',
@@ -47,7 +47,7 @@ export default function PaywallScreen() {
     {
       title: 'Monthly Plan',
       price: '$18.00',
-      originalPrice: '$36.00',
+      originalPrice: '$24.00',
       period: 'month',
       popular: false,
       suggestion: 'Explore the full benefits of SleepyAI with no long-term commitment.',
@@ -57,7 +57,7 @@ export default function PaywallScreen() {
   ];
 
   const handleSubscribe = (plan) => {
-    router.replace('/(app)');
+    router.replace('/(authenticated)');
   };
 
   return (
@@ -144,7 +144,7 @@ export default function PaywallScreen() {
             }
           ]}
         >
-          <Text style={styles.socialProofText}>47,392 people improved their sleep with SleepyAI and counting</Text>
+          <Text style={styles.socialProofText}>(47,392 people improved their sleep with SleepyAI)</Text>
         </Animated.View>
 
         <Animated.View 
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   socialProofText: {
     color: '#94A3B8',
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 20,
     fontStyle: 'italic',
     textAlign: 'center',

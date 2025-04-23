@@ -58,7 +58,7 @@ export default function LifestyleHabitsScreen() {
           <Text style={styles.title}>What affects your daily routine?</Text>
           <View style={styles.titleDecoration} />
           <Text style={styles.description}>
-            Select habits that impact your sleep
+            Select all lifestyle habits that impact your sleep
           </Text>
         </View>
 
