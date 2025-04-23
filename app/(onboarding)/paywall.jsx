@@ -1,122 +1,184 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideUpAnim = React.useRef(new Animated.Value(100)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideUpAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const subscriptionPlans = [
     {
       title: 'Annual Plan',
       price: '$108.00',
-      originalPrice: '$216.00', // Fake original price
+      originalPrice: '$216.00',
       period: 'year',
       popular: false,
       suggestion: 'Unlock the best value with 50% savings, perfect for long-term benefits.',
       dailyRate: '$0.33/day',
-      icon: 'star', // Example icon name
+      icon: 'star',
     },
     {
       title: '6-Month Plan',
       price: '$72.00',
-      originalPrice: '$108.00', // Fake original price
+      originalPrice: '$108.00',
       period: '6 months',
       popular: true,
       suggestion: 'Get started with great savings and flexibility for half a year of premium sleep.',
       dailyRate: '$0.40/day',
-      icon: 'gift', // Example icon name
+      icon: 'gift',
     },
     {
       title: 'Monthly Plan',
       price: '$18.00',
-      originalPrice: '$36.00', // Fake original price
+      originalPrice: '$36.00',
       period: 'month',
       popular: false,
       suggestion: 'Explore the full benefits of SleepyAI with no long-term commitment.',
       dailyRate: '$0.60/day',
-      icon: 'time', // Example icon name
+      icon: 'time',
     },
   ];
 
   const handleSubscribe = (plan) => {
-    router.push('/(onboarding)/summary');
+    router.replace('/(app)');
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <ScrollView 
         style={styles.content}
-        showsVerticalScrollIndicator={false} // Hide vertical scrollbar
-        showsHorizontalScrollIndicator={false} // Hide horizontal scrollbar
-      >
-        <Text style={styles.title}>UNLOCK SLEEPYAI</Text>
-        <Text style={styles.subheader}>
-          Experience the Pinnacle of Sleep with Our Exclusive Intelligent System.
-        </Text>
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}>
+        <Animated.View 
+          style={[
+            styles.titleContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            }
+          ]}
+        >
+          <Text style={styles.title}>UNLOCK SLEEPYAI</Text>
+          <View style={styles.titleDecoration} />
+          <Text style={styles.subheader}>
+            Experience the Pinnacle of Sleep with Our Exclusive Intelligent System.
+          </Text>
+        </Animated.View>
 
-        {/* Founding Member Discount - Polished UI */}
-        <View style={styles.discountContainer}>
+        <Animated.View 
+          style={[
+            styles.discountContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            }
+          ]}
+        >
           <Text style={styles.discountText}>Founding Member Discount: Limited Time Only</Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.plansContainer}>
           {subscriptionPlans.map((plan, index) => (
-            <TouchableOpacity
+            <Animated.View 
               key={index}
-              style={[styles.planCard, plan.popular && styles.popularPlan]}
-              onPress={() => handleSubscribe(plan)}
+              style={[
+                styles.planCard,
+                plan.popular && styles.popularPlan,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideUpAnim }],
+                }
+              ]}
             >
-              {/* Icon on the top right corner with extra space */}
-              <Ionicons
-                name={plan.icon}
-                size={24}
-                color="#4F46E5"
-                style={styles.icon}
-              />
+              <TouchableOpacity onPress={() => handleSubscribe(plan)}>
+                <Ionicons
+                  name={plan.icon}
+                  size={24}
+                  color="#3B82F6"
+                  style={styles.icon}
+                />
 
-              {plan.popular && (
-                <View style={styles.popularBadge}>
-                  <Text style={styles.popularText}>Most Popular</Text>
+                {plan.popular && (
+                  <View style={styles.popularBadge}>
+                    <Text style={styles.popularText}>Most Popular</Text>
+                  </View>
+                )}
+                <View style={styles.planInfo}>
+                  <Text style={styles.planTitle}>{plan.title}</Text>
+                  <Text style={styles.planPrice}>{plan.price}</Text>
+                  <Text style={styles.originalPrice}>{plan.originalPrice}</Text>
+                  <Text style={styles.planPeriod}>per {plan.period}</Text>
                 </View>
-              )}
-              <View style={styles.planInfo}>
-                <Text style={styles.planTitle}>{plan.title}</Text>
-                <Text style={styles.planPrice}>{plan.price}</Text>
-                
-                {/* Fake Price Comparison */}
-                <Text style={styles.originalPrice}>{plan.originalPrice}</Text>
-
-                <Text style={styles.planPeriod}>per {plan.period}</Text>
-              </View>
-              {/* Make sure the suggestion and daily rate are aligned */}
-              <View style={styles.suggestionContainer}>
-                <Text style={styles.suggestionText}>{plan.suggestion}</Text>
-                <Text style={styles.planDailyRate}>{plan.dailyRate}</Text>
-              </View>
-            </TouchableOpacity>
+                <View style={styles.suggestionContainer}>
+                  <Text style={styles.suggestionText}>{plan.suggestion}</Text>
+                  <Text style={styles.planDailyRate}>{plan.dailyRate}</Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
 
-        {/* Social Proof */}
-        <View style={styles.socialProofContainer}>
+        <Animated.View 
+          style={[
+            styles.socialProofContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            }
+          ]}
+        >
           <Text style={styles.socialProofText}>47,392 people improved their sleep with SleepyAI and counting</Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.trustBadges}>
+        <Animated.View 
+          style={[
+            styles.trustBadges,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            }
+          ]}
+        >
           <View style={styles.trustBadge}>
-            <Ionicons name="shield-checkmark" size={18} color="#4F46E5" />
+            <Ionicons name="shield-checkmark" size={20} color="#3B82F6" />
             <Text style={styles.trustText}>Secure Payment</Text>
           </View>
           <View style={styles.trustBadge}>
-            <Ionicons name="refresh" size={18} color="#4F46E5" />
+            <Ionicons name="refresh" size={20} color="#3B82F6" />
             <Text style={styles.trustText}>Cancel Anytime</Text>
           </View>
-        </View>
+        </Animated.View>
 
-        <Text style={styles.termsText}>
-          By continuing, you agree to our Terms of Service and Privacy Policy
-        </Text>
+        <Animated.View 
+          style={[
+            styles.footer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }],
+            }
+          ]}
+        >
+          <Text style={styles.termsText}>
+            By continuing, you agree to our Terms of Service and Privacy Policy
+          </Text>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -126,74 +188,95 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#0F172A',
+  },
+  header: {
+    marginBottom: 20,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(51, 65, 85, 0.3)',
+    borderRadius: 2,
+    marginTop: 20,
+  },
+  progress: {
+    height: '100%',
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
   },
   content: {
     flex: 1,
   },
+  titleContainer: {
+    marginTop: 40,
+    marginBottom: 32,
+  },
   title: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: '#7C3AED',
-    marginBottom: 12,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#E2E8F0',
+    marginBottom: 8,
     textTransform: 'uppercase',
-    textAlign: 'center',
     letterSpacing: 1.2,
+  },
+  titleDecoration: {
+    width: 40,
+    height: 3,
+    backgroundColor: '#3B82F6',
+    borderRadius: 2,
+    marginBottom: 8,
   },
   subheader: {
     fontSize: 16,
-    color: '#9CA3AF',
-    marginBottom: 32,
+    color: '#94A3B8',
+    lineHeight: 24,
     fontWeight: '600',
     fontStyle: 'italic',
-    textAlign: 'center',
   },
   discountContainer: {
-    backgroundColor: '#E5D8FF', // Soft color for elegance
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
-    marginBottom: 24,
+    borderRadius: 12,
+    marginBottom: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#7C3AED', // Keep the same purple border
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   discountText: {
-    color: '#7C3AED',
+    color: '#3B82F6',
     fontSize: 16,
     fontWeight: '700',
-    textAlign: 'center',
   },
   plansContainer: {
     marginBottom: 32,
   },
   planCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     position: 'relative',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
+    borderWidth: 1,
+    borderColor: 'rgba(51, 65, 85, 0.3)',
+  },
+  popularPlan: {
+    borderColor: '#3B82F6',
+    borderWidth: 2,
   },
   icon: {
     position: 'absolute',
-    top: 20,
-    right: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    top: 0,
+    right: 0,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
     borderRadius: 12,
     padding: 8,
   },
-  popularPlan: {
-    borderColor: '#4F46E5',
-    borderWidth: 2,
-  },
   popularBadge: {
     position: 'absolute',
-    top: -20,
+    top: -35,
     right: 20,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#3B82F6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
@@ -209,25 +292,25 @@ const styles = StyleSheet.create({
     minWidth: 180,
   },
   planTitle: {
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
   },
   planPrice: {
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: '700',
     marginBottom: 4,
   },
   originalPrice: {
-    color: '#B4B9BF', // Gray for original price
+    color: '#94A3B8',
     fontSize: 16,
     textDecorationLine: 'line-through',
     marginBottom: 8,
   },
   planPeriod: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontSize: 14,
     marginBottom: 16,
   },
@@ -239,15 +322,15 @@ const styles = StyleSheet.create({
     minWidth: 180,
   },
   suggestionText: {
-    color: '#B4B9BF',
+    color: '#94A3B8',
     fontSize: 14,
-    fontWeight: '400',
+    lineHeight: 20,
     fontStyle: 'italic',
   },
   planDailyRate: {
-    color: '#FFFFFF',
+    color: '#E2E8F0',
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: '600',
     marginTop: 6,
   },
   socialProofContainer: {
@@ -255,8 +338,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   socialProofText: {
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontSize: 14,
+    lineHeight: 20,
     fontStyle: 'italic',
     textAlign: 'center',
   },
@@ -266,21 +350,21 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   trustBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
   trustText: {
-    color: '#9CA3AF',
-    fontSize: 10,
-    marginTop: 0,
+    color: '#94A3B8',
+    fontSize: 14,
   },
   footer: {
     marginBottom: 20,
-    alignItems: 'center',
   },
   termsText: {
-    color: '#6B7280',
+    color: '#94A3B8',
     fontSize: 12,
+    lineHeight: 16,
     textAlign: 'center',
-    marginBottom: 20,
   },
 });

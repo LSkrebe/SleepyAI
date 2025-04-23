@@ -54,7 +54,10 @@ export default function SleepGoalsScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>What would you like to improve about your sleep?</Text>
         <Text style={styles.subheader}>Select your primary set of sleep goals to follow.</Text>
 
@@ -96,7 +99,7 @@ export default function SleepGoalsScreen() {
         onPress={handleNext}
         disabled={selectedGoals.length === 0}
       >
-        <Text style={styles.buttonText}>Analyze Sleep Quality</Text>
+        <Text style={styles.buttonText}>Finish</Text>
       </TouchableOpacity>
     </View>
   );

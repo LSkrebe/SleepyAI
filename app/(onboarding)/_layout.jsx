@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 export default function OnboardingLayout() {
   return (
     <LinearGradient
-      colors={['#111827', '#1F2937']}
+      colors={['#0F172A', '#1E293B']}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.safeArea} edges={['top']}>
