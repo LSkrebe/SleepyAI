@@ -33,6 +33,7 @@ export default function Settings() {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [showSleepDetectionConfirm, setShowSleepDetectionConfirm] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   
   const { deviceId } = useDevice();
 
@@ -287,6 +288,74 @@ export default function Settings() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderContent}>
+            <Text style={styles.cardTitle}>Subscription</Text>
+            <Text style={styles.cardSubtitle}>Manage your premium features</Text>
+          </View>
+          <View style={styles.cardIconContainer}>
+            <Lock size={24} color="#3B82F6" />
+          </View>
+        </View>
+        
+        <View style={styles.settingItem}>
+          <View style={styles.settingItemLeft}>
+            <View style={styles.iconContainer}>
+              <Zap size={20} color="#3B82F6" />
+            </View>
+            <View style={styles.settingItemContent}>
+              <Text style={styles.settingItemTitle}>Premium Status</Text>
+              <Text style={styles.settingItemDescription}>Review your subscription details</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.subscriptionButton}
+            onPress={() => setShowSubscriptionModal(true)}
+          >
+            <Text style={styles.subscriptionButtonText}>Manage</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+{/* Manage Subscription Modal */}
+      <Modal
+        visible={showSubscriptionModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSubscriptionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+          <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
+            <Lock size={24} color="#3B82F6" />
+          </View>
+          <Text style={styles.modalTitle}>Manage Subscription</Text>
+          </View>
+
+          <Text style={styles.modalText}>
+          Here you can manage your premium subscription. You can view your current plan, billing details, and cancel your subscription if needed.
+          </Text>
+
+          {/* Add more content for your subscription management options here */}
+          {/* For example, buttons to view plan, billing, or cancel */}
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setShowSubscriptionModal(false)}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+                style={[styles.modalButton, styles.confirmButton]} 
+                //onPress={confirmDisableSleepDetection}
+              >
+                <Text style={styles.confirmButtonText}>End Subscription</Text>
+              </TouchableOpacity>
+          </View>
+        </View>
+        </View>
+      </Modal>
+      
 
       {/* Sleep Detection Confirmation Modal */}
       <Modal
@@ -548,7 +617,7 @@ const styles = StyleSheet.create({
   },
   modalWarning: {
     color: '#EF4444',
-    fontWeight: '600',
+    fontWeight: '600',  
     marginTop: 8,
   },
   modalButtons: {
@@ -578,6 +647,19 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#EF4444',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  subscriptionButton: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  subscriptionButtonText: {
+    color: '#3B82F6',
+    fontSize: 14,
     fontWeight: '600',
   },
 }); 

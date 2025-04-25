@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
   },
   cyclesCard: {
     borderColor: 'rgba(51, 65, 85, 0.2)',
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
   },
   cyclesTitle: {
     fontSize: 20,
@@ -953,7 +953,7 @@ const styles = StyleSheet.create({
   },
   environmentCard: {
     borderColor: 'rgba(51, 65, 85, 0.2)',
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
   },
   environmentHeaderContent: {
     flex: 1,
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   insightsCard: {
     borderColor: 'rgba(51, 65, 85, 0.2)',
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+    backgroundColor: 'rgba(30, 41, 59, 0.5)',
   },
   insightsHeaderContent: {
     flex: 1,
