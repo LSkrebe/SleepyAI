@@ -1,8 +1,31 @@
 import { Accelerometer, Gyroscope } from 'expo-sensors';
 import Constants from 'expo-constants';
-import { EventEmitter } from 'events';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
+
+// Custom EventEmitter implementation for React Native
+class EventEmitter {
+  constructor() {
+    this.events = {};
+  }
+
+  on(event, listener) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(listener);
+  }
+
+  off(event, listener) {
+    if (!this.events[event]) return;
+    this.events[event] = this.events[event].filter(l => l !== listener);
+  }
+
+  emit(event, ...args) {
+    if (!this.events[event]) return;
+    this.events[event].forEach(listener => listener(...args));
+  }
+}
 
 class SleepTrackingService {
   constructor() {
