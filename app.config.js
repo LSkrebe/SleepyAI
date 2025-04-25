@@ -4,12 +4,12 @@ export default {
     slug: 'sleepyai',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.svg',
+    icon: './assets/images/icon.png',
     userInterfaceStyle: 'light',
     scheme: 'sleepyai',
     newArchEnabled: true,
     splash: {
-      image: './assets/splash.svg',
+      image: './assets/images/splash-icon.png',
       resizeMode: 'contain',
       backgroundColor: '#ffffff'
     },
@@ -17,16 +17,11 @@ export default {
       '**/*'
     ],
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
+      bundleIdentifier: 'com.demis3.sleepyai'
     },
     android: {
-      adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.svg',
-        backgroundColor: '#ffffff'
-      }
-    },
-    web: {
-      favicon: './assets/favicon.svg'
+      package: 'com.demis3.sleepyai'
     },
     extra: {
       EXPO_PUBLIC_GROQ_API_KEY: process.env.EXPO_PUBLIC_GROQ_API_KEY,
