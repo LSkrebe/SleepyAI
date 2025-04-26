@@ -248,8 +248,8 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
             sum += buffer[i] * buffer[i]
         }
         val rms = sqrt(sum / readSize)
-        // Convert to decibels (dB)
-        return 20 * log10(rms / 32768.0) + 100 // Normalize to 0-100 range
+        // Convert to decibels (dB) and round to whole number
+        return (20 * log10(rms / 32768.0) + 100).toInt().toDouble() // Normalize to 0-100 range and round
     }
 
     override fun onSensorChanged(event: SensorEvent) {
