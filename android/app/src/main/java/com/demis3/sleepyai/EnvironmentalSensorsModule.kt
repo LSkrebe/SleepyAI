@@ -15,12 +15,17 @@ import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import kotlin.math.log10
 import kotlin.math.sqrt
+import okhttp3.*
+import org.json.JSONObject
+import java.io.IOException
+import java.util.concurrent.TimeUnit
+import android.location.Location
+import android.location.LocationManager
+import com.facebook.react.modules.core.PermissionListener
 
-class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), SensorEventListener {
+class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), SensorEventListener, PermissionListener {
     private val sensorManager: SensorManager = reactContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
     private var lightSensor: Sensor? = null
-    private var temperatureSensor: Sensor? = null
-    private var humiditySensor: Sensor? = null
     private var audioRecord: AudioRecord? = null
     private var isRecording = false
     private val SAMPLE_RATE = 44100
@@ -31,14 +36,23 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
     private var isEmulator = false
     private var mockDataThread: Thread? = null
     private var hasAudioPermission = false
+    private var hasLocationPermission = false
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .build()
 
     init {
         // Check if running on emulator
         isEmulator = isEmulator()
-        // Check initial permission state
+        // Check initial permission states
         hasAudioPermission = ContextCompat.checkSelfPermission(
             reactApplicationContext,
             android.Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+        hasLocationPermission = ContextCompat.checkSelfPermission(
+            reactApplicationContext,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 
@@ -85,22 +99,15 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
                 availableSensors.add("Light")
             }
 
-            temperatureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE)
-            if (temperatureSensor != null) {
-                sensorManager.registerListener(this, temperatureSensor, SensorManager.SENSOR_DELAY_NORMAL)
-                availableSensors.add("Temperature")
-            }
-
-            humiditySensor = sensorManager.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY)
-            if (humiditySensor != null) {
-                sensorManager.registerListener(this, humiditySensor, SensorManager.SENSOR_DELAY_NORMAL)
-                availableSensors.add("Humidity")
-            }
-
-            // Check current permission state
+            // Check current permission states
             hasAudioPermission = ContextCompat.checkSelfPermission(
                 reactApplicationContext,
                 android.Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+
+            hasLocationPermission = ContextCompat.checkSelfPermission(
+                reactApplicationContext,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
 
             // Start noise level monitoring if we have permission
@@ -136,8 +143,6 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
             while (isRecording) {
                 val params = Arguments.createMap().apply {
                     putDouble("light", 50.0) // Moderate light
-                    putDouble("temperature", 22.0) // Room temperature
-                    putDouble("humidity", 45.0) // Moderate humidity
                     putDouble("noise", 30.0) // Quiet room
                 }
                 reactApplicationContext
@@ -162,6 +167,82 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
                 .emit("environmentalSensorError", "Error stopping sensors: ${e.message}")
         }
+    }
+
+    @ReactMethod
+    fun getWeatherData(promise: Promise) {
+        try {
+            if (!hasLocationPermission) {
+                promise.reject("WEATHER_ERROR", "Location permission not granted")
+                return
+            }
+
+            val locationManager = reactApplicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+            if (location == null) {
+                promise.reject("WEATHER_ERROR", "Could not get location")
+                return
+            }
+
+            val apiKey = reactApplicationContext.getString(R.string.expo_public_openweathermap_api_key)
+            if (apiKey.isEmpty()) {
+                promise.reject("WEATHER_ERROR", "OpenWeatherMap API key not found in .env file")
+                return
+            }
+
+            val url = "https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=$apiKey&units=metric"
+            makeWeatherRequest(url, promise)
+        } catch (e: Exception) {
+            promise.reject("WEATHER_ERROR", "Error fetching weather data: ${e.message}")
+        }
+    }
+
+    private fun makeWeatherRequest(url: String, promise: Promise) {
+        val request = Request.Builder()
+            .url(url)
+            .build()
+
+        client.newCall(request).enqueue(object : okhttp3.Callback {
+            override fun onFailure(call: okhttp3.Call, e: IOException) {
+                promise.reject("WEATHER_ERROR", "Failed to fetch weather data: ${e.message}")
+            }
+
+            override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                try {
+                    val jsonData = response.body?.string()
+                    if (jsonData == null) {
+                        promise.reject("WEATHER_ERROR", "Empty response from weather API")
+                        return
+                    }
+
+                    val json = JSONObject(jsonData)
+                    if (!json.has("main")) {
+                        promise.reject("WEATHER_ERROR", "Invalid response from weather API: ${jsonData}")
+                        return
+                    }
+
+                    val main = json.getJSONObject("main")
+                    if (!main.has("temp") || !main.has("humidity")) {
+                        promise.reject("WEATHER_ERROR", "Missing temperature or humidity data")
+                        return
+                    }
+                    
+                    val temperature = main.getDouble("temp")
+                    val humidity = main.getDouble("humidity")
+
+                    val result = Arguments.createMap().apply {
+                        putDouble("temperature", temperature)
+                        putDouble("humidity", humidity)
+                    }
+
+                    promise.resolve(result)
+                } catch (e: Exception) {
+                    promise.reject("WEATHER_ERROR", "Failed to parse weather data: ${e.message}")
+                }
+            }
+        })
     }
 
     private fun startNoiseMonitoring(): Boolean {
@@ -257,8 +338,6 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
             val params = Arguments.createMap().apply {
                 when (event.sensor.type) {
                     Sensor.TYPE_LIGHT -> putDouble("light", event.values[0].toDouble())
-                    Sensor.TYPE_AMBIENT_TEMPERATURE -> putDouble("temperature", event.values[0].toDouble())
-                    Sensor.TYPE_RELATIVE_HUMIDITY -> putDouble("humidity", event.values[0].toDouble())
                 }
             }
 
@@ -274,5 +353,24 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         // Not needed for this implementation
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray): Boolean {
+        when (requestCode) {
+            PERMISSION_REQUEST_CODE -> {
+                hasAudioPermission = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                return true
+            }
+            LOCATION_PERMISSION_REQUEST_CODE -> {
+                hasLocationPermission = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                return true
+            }
+        }
+        return false
+    }
+
+    companion object {
+        private const val PERMISSION_REQUEST_CODE = 123
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 124
     }
 } 

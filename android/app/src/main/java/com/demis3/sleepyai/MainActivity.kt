@@ -19,6 +19,7 @@ import androidx.core.content.ContextCompat
 class MainActivity : ReactActivity() {
   companion object {
     private const val PERMISSION_REQUEST_CODE = 123
+    private const val LOCATION_PERMISSION_REQUEST_CODE = 124
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,8 +32,9 @@ class MainActivity : ReactActivity() {
     // @generated end expo-splashscreen
     super.onCreate(null)
 
-    // Request audio recording permission
+    // Request permissions
     requestAudioPermission()
+    requestLocationPermission()
   }
 
   private fun requestAudioPermission() {
@@ -62,6 +64,39 @@ class MainActivity : ReactActivity() {
     }
   }
 
+  private fun requestLocationPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      when {
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+          // Permission already granted
+        }
+        shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
+          // Show explanation why we need the permission
+          Toast.makeText(this, "Location permission is needed for accurate weather data", Toast.LENGTH_LONG).show()
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+              Manifest.permission.ACCESS_FINE_LOCATION,
+              Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            LOCATION_PERMISSION_REQUEST_CODE
+          )
+        }
+        else -> {
+          // Request the permission
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(
+              Manifest.permission.ACCESS_FINE_LOCATION,
+              Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            LOCATION_PERMISSION_REQUEST_CODE
+          )
+        }
+      }
+    }
+  }
+
   override fun onRequestPermissionsResult(
     requestCode: Int,
     permissions: Array<out String>,
@@ -76,6 +111,15 @@ class MainActivity : ReactActivity() {
         } else {
           // Permission denied
           Toast.makeText(this, "Audio permission denied - noise monitoring will not work", Toast.LENGTH_LONG).show()
+        }
+      }
+      LOCATION_PERMISSION_REQUEST_CODE -> {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          // Permission granted
+          Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+          // Permission denied
+          Toast.makeText(this, "Location permission denied - weather data may be inaccurate", Toast.LENGTH_LONG).show()
         }
       }
     }

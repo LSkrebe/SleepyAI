@@ -319,6 +319,15 @@ class SleepTrackingService {
       environmentalAverages.noise = Math.round(environmentalAverages.noise / dataCount);
       environmentalAverages.light = Math.round(environmentalAverages.light / dataCount);
 
+      // Get weather data
+      let weatherData;
+      try {
+        weatherData = await this.environmentalSensors.getWeatherData();
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+        weatherData = { temperature: 0, humidity: 0 };
+      }
+
       // Prepare environmental data for emission
       const environmentalData = this.sleepData.map(data => ({
         temperature: data.environmental.temperature,
@@ -458,8 +467,8 @@ ${this.sleepData.map(point =>
         quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
         cycles: analysis.cycles.count,
         environmental: {
-          temperature: environmentalAverages.temperature,
-          humidity: environmentalAverages.humidity,
+          temperature: weatherData.temperature,
+          humidity: weatherData.humidity,
           noise: environmentalAverages.noise,
           light: environmentalAverages.light
         },
