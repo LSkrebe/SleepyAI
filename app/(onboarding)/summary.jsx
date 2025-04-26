@@ -75,7 +75,7 @@ export default function SummaryScreen() {
           style={styles.button}
           onPress={handleComplete}
         >
-          <Text style={styles.buttonText}>Finish</Text>
+          <Text style={styles.buttonText}>Continue to Subscription</Text>
         </TouchableOpacity>
       </View>
     </View>

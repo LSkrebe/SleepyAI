@@ -60,10 +60,43 @@ export default function Alarm() {
       }));
     };
     
+    // Set up listener for sleep window updates from the service
+    const handleSleepWindowUpdate = ({ bedTime, wakeTime }) => {
+      // Update current display times
+      setBedTime(bedTime);
+      setWakeTime(wakeTime);
+      
+      // Update settings with new times
+      setSettings(prev => {
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        
+        const newSettings = {
+          ...prev,
+          days: {
+            ...prev.days,
+            [currentDay.id]: {
+              ...prev.days[currentDay.id],
+              bedtime: bedTime,
+              wakeup: wakeTime,
+            }
+          }
+        };
+
+        // Save settings immediately
+        saveSettings(newSettings);
+        
+        return newSettings;
+      });
+    };
+    
     sleepTrackingService.onSleepDetectionUpdate(handleSleepDetectionUpdate);
+    sleepTrackingService.onSleepWindowUpdate(handleSleepWindowUpdate);
     
     return () => {
       sleepTrackingService.offSleepDetectionUpdate(handleSleepDetectionUpdate);
+      sleepTrackingService.offSleepWindowUpdate(handleSleepWindowUpdate);
     };
   }, []);
 
@@ -74,6 +107,23 @@ export default function Alarm() {
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings(parsedSettings);
+        
+        // Get current day
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = DAYS[adjustedDay];
+        
+        // Set current day's times
+        if (parsedSettings.days && parsedSettings.days[currentDay.id]) {
+          setBedTime(parsedSettings.days[currentDay.id].bedtime);
+          setWakeTime(parsedSettings.days[currentDay.id].wakeup);
+          
+          // Sync with sleep tracking service
+          sleepTrackingService.setSleepWindow(
+            parsedSettings.days[currentDay.id].bedtime,
+            parsedSettings.days[currentDay.id].wakeup
+          );
+        }
         
         // Sync sleep detection setting with the service
         sleepTrackingService.setSleepDetectionEnabled(parsedSettings.sleepDetection);
@@ -86,10 +136,10 @@ export default function Alarm() {
   };
 
   // Save settings to AsyncStorage
-  const saveSettings = async () => {
+  const saveSettings = async (settingsToSave = settings) => {
     try {
       const storageKey = getSettingsStorageKey(deviceId);
-      await AsyncStorage.setItem(storageKey, JSON.stringify(settings));
+      await AsyncStorage.setItem(storageKey, JSON.stringify(settingsToSave));
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -209,6 +259,9 @@ export default function Alarm() {
         } else {
           setWakeTime(formattedTime);
         }
+
+        // Save settings immediately
+        saveSettings(newSettings);
 
         return newSettings;
       });

@@ -2,9 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDevice } from '../../context/DeviceContext';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const { deviceId } = useDevice();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideUpAnim = React.useRef(new Animated.Value(100)).current;
 
@@ -56,8 +59,17 @@ export default function PaywallScreen() {
     },
   ];
 
-  const handleSubscribe = (plan) => {
-    router.replace('/(authenticated)');
+  const handleSubscribe = async (plan) => {
+    try {
+      // Save onboarding completion status
+      await AsyncStorage.setItem(`onboarding_completed_${deviceId}`, 'true');
+      // Navigate to authenticated area
+      router.replace('/(authenticated)');
+    } catch (error) {
+      console.error('Error saving onboarding status:', error);
+      // Still navigate even if saving fails
+      router.replace('/(authenticated)');
+    }
   };
 
   return (

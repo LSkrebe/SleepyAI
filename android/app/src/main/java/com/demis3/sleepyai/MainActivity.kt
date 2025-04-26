@@ -1,8 +1,11 @@
 package com.demis3.sleepyai
 import expo.modules.splashscreen.SplashScreenManager
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -10,8 +13,14 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 class MainActivity : ReactActivity() {
+  companion object {
+    private const val PERMISSION_REQUEST_CODE = 123
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
@@ -21,6 +30,55 @@ class MainActivity : ReactActivity() {
     SplashScreenManager.registerOnActivity(this)
     // @generated end expo-splashscreen
     super.onCreate(null)
+
+    // Request audio recording permission
+    requestAudioPermission()
+  }
+
+  private fun requestAudioPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      when {
+        ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> {
+          // Permission already granted
+        }
+        shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) -> {
+          // Show explanation why we need the permission
+          Toast.makeText(this, "Audio permission is needed for noise level monitoring", Toast.LENGTH_LONG).show()
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.RECORD_AUDIO),
+            PERMISSION_REQUEST_CODE
+          )
+        }
+        else -> {
+          // Request the permission
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.RECORD_AUDIO),
+            PERMISSION_REQUEST_CODE
+          )
+        }
+      }
+    }
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<out String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    when (requestCode) {
+      PERMISSION_REQUEST_CODE -> {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          // Permission granted
+          Toast.makeText(this, "Audio permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+          // Permission denied
+          Toast.makeText(this, "Audio permission denied - noise monitoring will not work", Toast.LENGTH_LONG).show()
+        }
+      }
+    }
   }
 
   /**
@@ -49,17 +107,17 @@ class MainActivity : ReactActivity() {
     * where moving root activities to background instead of finishing activities.
     * @see <a href="https://developer.android.com/reference/android/app/Activity#onBackPressed()">onBackPressed</a>
     */
-  override fun invokeDefaultOnBackPressed() {
-      if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
-          if (!moveTaskToBack(false)) {
-              // For non-root activities, use the default implementation to finish them.
-              super.invokeDefaultOnBackPressed()
-          }
-          return
+  override fun onBackPressed() {
+    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+      if (!moveTaskToBack(false)) {
+        // For non-root activities, use the default implementation to finish them.
+        super.invokeDefaultOnBackPressed()
       }
+      return
+    }
 
-      // Use the default back button implementation on Android S
-      // because it's doing more than [Activity.moveTaskToBack] in fact.
-      super.invokeDefaultOnBackPressed()
+    // Use the default back button implementation on Android S
+    // because it's doing more than [Activity.moveTaskToBack] in fact.
+    super.invokeDefaultOnBackPressed()
   }
 }

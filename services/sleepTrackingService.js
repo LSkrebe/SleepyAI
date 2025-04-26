@@ -2,6 +2,7 @@ import { Accelerometer, Gyroscope } from 'expo-sensors';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
+import { NativeModules, NativeEventEmitter } from 'react-native';
 
 // Custom EventEmitter implementation for React Native
 class EventEmitter {
@@ -44,12 +45,40 @@ class SleepTrackingService {
     this.eventEmitter = new EventEmitter();
     this.sleepDetectionEnabled = true; // Default to enabled
     this.deviceId = null;
+    this.environmentalSensors = NativeModules.EnvironmentalSensors;
+    this.environmentalSensorsEmitter = new NativeEventEmitter(this.environmentalSensors);
+    this.currentEnvironmentalData = {
+      light: 0,
+      temperature: 0,
+      humidity: 0,
+      noise: 0
+    };
 
-    // Initialize device ID
-    this.initializeDeviceId();
+    // Initialize device ID and load settings
+    this.initializeDeviceId().then(() => {
+      this.loadSettings();
+    });
 
     // Start periodic check for sleep window
     this.startWindowCheck();
+
+    // Set up environmental sensors listeners
+    this.environmentalSensorsEmitter.addListener('environmentalSensorUpdate', (data) => {
+      this.currentEnvironmentalData = {
+        ...this.currentEnvironmentalData,
+        ...data
+      };
+    });
+
+    this.environmentalSensorsEmitter.addListener('environmentalSensorError', (error) => {
+      console.error('Environmental sensor error:', error);
+      this.eventEmitter.emit('sensorError', error);
+    });
+
+    this.environmentalSensorsEmitter.addListener('environmentalSensorStatus', (status) => {
+      console.log('Environmental sensor status:', status);
+      this.eventEmitter.emit('sensorStatus', status);
+    });
   }
 
   async initializeDeviceId() {
@@ -66,6 +95,29 @@ class SleepTrackingService {
       this.deviceId = storedDeviceId;
     } catch (error) {
       console.error('Error initializing device ID:', error);
+    }
+  }
+
+  async loadSettings() {
+    try {
+      const storageKey = `@sleepyai_settings_${this.deviceId}`;
+      const savedSettings = await AsyncStorage.getItem(storageKey);
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        // Get current day
+        const today = new Date().getDay();
+        const adjustedDay = today === 0 ? 6 : today - 1;
+        const currentDay = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][adjustedDay];
+        
+        if (settings.days && settings.days[currentDay]) {
+          this.bedTime = settings.days[currentDay].bedtime;
+          this.wakeTime = settings.days[currentDay].wakeup;
+          // Emit event to notify components of loaded settings
+          this.eventEmitter.emit('sleepWindowUpdate', { bedTime: this.bedTime, wakeTime: this.wakeTime });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
     }
   }
 
@@ -157,58 +209,6 @@ class SleepTrackingService {
     const accel = this.formatSensorData(accelerometerData);
     const gyro = this.formatSensorData(gyroscopeData, true);
     
-    // Generate realistic environmental data based on time of day
-    const hour = now.getHours();
-    let noise, light, temperature, humidity;
-
-    // Noise levels (in dB)
-    if (hour >= 22 || hour < 6) {
-      // Night time - quieter
-      noise = Math.floor(25 + Math.random() * 10); // 25-35 dB
-    } else if (hour >= 6 && hour < 8) {
-      // Early morning - moderate noise
-      noise = Math.floor(35 + Math.random() * 15); // 35-50 dB
-    } else {
-      // Day time - higher noise
-      noise = Math.floor(45 + Math.random() * 20); // 45-65 dB
-    }
-
-    // Light levels (in lux)
-    if (hour >= 22 || hour < 6) {
-      // Night time - very dark
-      light = Math.floor(Math.random() * 5); // 0-5 lux
-    } else if (hour >= 6 && hour < 8) {
-      // Early morning - moderate light
-      light = Math.floor(50 + Math.random() * 100); // 50-150 lux
-    } else {
-      // Day time - bright
-      light = Math.floor(200 + Math.random() * 300); // 200-500 lux
-    }
-
-    // Temperature (in Celsius)
-    if (hour >= 22 || hour < 6) {
-      // Night time - cooler
-      temperature = Math.floor(18 + Math.random() * 2); // 18-20°C
-    } else if (hour >= 6 && hour < 8) {
-      // Early morning - moderate
-      temperature = Math.floor(20 + Math.random() * 2); // 20-22°C
-    } else {
-      // Day time - warmer
-      temperature = Math.floor(22 + Math.random() * 3); // 22-25°C
-    }
-
-    // Humidity (in percentage)
-    if (hour >= 22 || hour < 6) {
-      // Night time - higher humidity
-      humidity = Math.floor(45 + Math.random() * 10); // 45-55%
-    } else if (hour >= 6 && hour < 8) {
-      // Early morning - moderate humidity
-      humidity = Math.floor(40 + Math.random() * 10); // 40-50%
-    } else {
-      // Day time - lower humidity
-      humidity = Math.floor(35 + Math.random() * 10); // 35-45%
-    }
-    
     const dataPoint = {
       time,
       accelerometer: accel,
@@ -216,10 +216,10 @@ class SleepTrackingService {
       charging: this.isPhoneCharging,
       state: this.phoneState,
       environmental: {
-        noise,
-        light,
-        temperature,
-        humidity
+        noise: this.currentEnvironmentalData.noise,
+        light: this.currentEnvironmentalData.light,
+        temperature: this.currentEnvironmentalData.temperature,
+        humidity: this.currentEnvironmentalData.humidity
       }
     };
 
@@ -227,7 +227,7 @@ class SleepTrackingService {
     this.sleepData.push(dataPoint);
     
     // Log the current data point
-    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${noise} L=${light} T=${temperature} H=${humidity}`);
+    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${this.currentEnvironmentalData.noise} L=${this.currentEnvironmentalData.light} T=${this.currentEnvironmentalData.temperature} H=${this.currentEnvironmentalData.humidity}`);
   }
 
   startTracking() {
@@ -238,6 +238,9 @@ class SleepTrackingService {
 
     // Reset sleep data when starting new tracking session
     this.sleepData = [];
+
+    // Start environmental sensors
+    this.environmentalSensors.startListening();
 
     Accelerometer.setUpdateInterval(10000);
     Gyroscope.setUpdateInterval(10000);
@@ -260,6 +263,9 @@ class SleepTrackingService {
 
   stopTracking() {
     if (!this.isTracking) return;
+
+    // Stop environmental sensors
+    this.environmentalSensors.stopListening();
 
     if (this.accelerometerSubscription) {
       this.accelerometerSubscription.remove();
@@ -579,6 +585,23 @@ ${this.sleepData.map(point =>
 
   offSleepDetectionUpdate(callback) {
     this.eventEmitter.off('sleepDetectionUpdate', callback);
+  }
+
+  // Add new event listener methods for sensor events
+  onSensorError(callback) {
+    this.eventEmitter.on('sensorError', callback);
+  }
+
+  offSensorError(callback) {
+    this.eventEmitter.off('sensorError', callback);
+  }
+
+  onSensorStatus(callback) {
+    this.eventEmitter.on('sensorStatus', callback);
+  }
+
+  offSensorStatus(callback) {
+    this.eventEmitter.off('sensorStatus', callback);
   }
 }
 
