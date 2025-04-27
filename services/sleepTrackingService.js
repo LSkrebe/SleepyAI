@@ -227,7 +227,7 @@ class SleepTrackingService {
     this.sleepData.push(dataPoint);
     
     // Log the current data point
-    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${this.currentEnvironmentalData.noise} L=${this.currentEnvironmentalData.light} T=${this.currentEnvironmentalData.temperature} H=${this.currentEnvironmentalData.humidity}`);
+    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${this.currentEnvironmentalData.noise} L=${this.currentEnvironmentalData.light}`);
   }
 
   startTracking() {

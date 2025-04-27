@@ -29,11 +29,6 @@ export default function Journal() {
       data: [0, 45, 20, 85, 70, 90, 40, 70, 30, 0],
     }],
   });
-  const [sleepInsights, setSleepInsights] = useState([
-    "Maintain a consistent sleep schedule by going to bed and waking up at the same time every day, even on weekends",
-    "Keep your bedroom temperature between 18-22°C and ensure it's completely dark for optimal sleep conditions",
-    "Avoid using electronic devices at least 1 hour before bedtime as blue light can disrupt your natural sleep cycle"
-  ]);
   const [sleepData, setSleepData] = useState([]);
   const [latestSleepDate, setLatestSleepDate] = useState(null);
 
@@ -57,7 +52,6 @@ export default function Journal() {
         humidity: humidity,
         noise: noise,
         light: light,
-        insights: sleepInsights,
         date: new Date().toISOString()
       };
       await AsyncStorage.setItem(`cardData_${deviceId}`, JSON.stringify(cardData));
@@ -135,6 +129,9 @@ export default function Journal() {
 
         if (storedCardData) {
           const cardData = JSON.parse(storedCardData);
+
+          console.log('cardData', cardData);
+
           setSleepQuality(cardData.quality);
           setSleepDuration(cardData.duration);
           setSleepCycles(cardData.cycles);
@@ -143,7 +140,6 @@ export default function Journal() {
           setHumidity(cardData.humidity);
           setNoise(cardData.noise);
           setLight(cardData.light);
-          setSleepInsights(cardData.insights);
           // Only update latestSleepDate if it's not already set from sleepData
           if (!latestSleepDate) {
             setLatestSleepDate(cardData.date);
@@ -220,11 +216,6 @@ export default function Journal() {
         
         setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
       }
-    }
-
-    // Update insights
-    if (data.insights) {
-      setSleepInsights(data.insights);
     }
 
     // Save to AsyncStorage
@@ -371,9 +362,6 @@ export default function Journal() {
         setLight(newLight);
       }
 
-      // Update sleep insights
-      setSleepInsights(data.insights || []);
-
       // Update chart data
       setSleepQualityData({
         labels,
@@ -399,7 +387,6 @@ export default function Journal() {
         humidity: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.humidity, 0) / data.environmental.length) : humidity,
         noise: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.noise, 0) / data.environmental.length) : noise,
         light: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.light, 0) / data.environmental.length) : light,
-        insights: data.insights || [],
         date: sleepDateString,
         timestamp: now.getTime() // Add timestamp to ensure correct date comparison
       };

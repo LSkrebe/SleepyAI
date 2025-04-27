@@ -186,13 +186,7 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
                 return
             }
 
-            val apiKey = reactApplicationContext.getString(R.string.expo_public_openweathermap_api_key)
-            if (apiKey.isEmpty()) {
-                promise.reject("WEATHER_ERROR", "OpenWeatherMap API key not found in .env file")
-                return
-            }
-
-            val url = "https://api.openweathermap.org/data/2.5/weather?lat=${location.latitude}&lon=${location.longitude}&appid=$apiKey&units=metric"
+            val url = "https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&daily=temperature_2m_mean,relative_humidity_2m_mean"
             makeWeatherRequest(url, promise)
         } catch (e: Exception) {
             promise.reject("WEATHER_ERROR", "Error fetching weather data: ${e.message}")
@@ -218,19 +212,19 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
                     }
 
                     val json = JSONObject(jsonData)
-                    if (!json.has("main")) {
+                    if (!json.has("daily")) {
                         promise.reject("WEATHER_ERROR", "Invalid response from weather API: ${jsonData}")
                         return
                     }
 
-                    val main = json.getJSONObject("main")
-                    if (!main.has("temp") || !main.has("humidity")) {
+                    val daily = json.getJSONObject("daily")
+                    if (!daily.has("temperature_2m_mean") || !daily.has("relative_humidity_2m_mean")) {
                         promise.reject("WEATHER_ERROR", "Missing temperature or humidity data")
                         return
                     }
                     
-                    val temperature = main.getDouble("temp")
-                    val humidity = main.getDouble("humidity")
+                    val temperature = daily.getJSONArray("temperature_2m_mean").getDouble(0)
+                    val humidity = daily.getJSONArray("relative_humidity_2m_mean").getDouble(0)
 
                     val result = Arguments.createMap().apply {
                         putDouble("temperature", temperature)

@@ -169,13 +169,23 @@ const chartConfigs = {
 
 // Update TrendIndicator component to handle optimal values
 const TrendIndicator = ({ currentValue, previousValue, inverted = false, optimalValue, isAboveOptimal, isBelowOptimal }) => {
+  // Handle case where all data is 0
+  if (currentValue === 0 && previousValue === 0) {
+    return (
+      <View style={styles.trendContainer}>
+        <Minus size={16} color="#CBD5E1" />
+        <Text style={[styles.trendText, styles.trendTextNeutral]}>0%</Text>
+      </View>
+    );
+  }
+
   if (!currentValue || !previousValue) return null;
 
   const difference = currentValue - previousValue;
   const percentage = Math.round((difference / previousValue) * 100);
   const isPositive = difference > 0;
   const isNegative = difference < 0;
-  const isNeutral = difference === 0;
+  const isNeutral = difference === 0 || percentage === 0;
 
   // Determine if the trend is good based on both weekly comparison and optimal values
   let isGood;
@@ -196,6 +206,9 @@ const TrendIndicator = ({ currentValue, previousValue, inverted = false, optimal
     isGood = inverted ? !isPositive : isPositive;
   }
 
+  // Format percentage display
+  const displayPercentage = Math.abs(percentage) > 100 ? '+100' : Math.abs(percentage);
+
   return (
     <View style={styles.trendContainer}>
       {isNeutral ? (
@@ -210,7 +223,7 @@ const TrendIndicator = ({ currentValue, previousValue, inverted = false, optimal
         isNeutral ? styles.trendTextNeutral : 
         isGood ? styles.trendTextPositive : styles.trendTextNegative
       ]}>
-        {Math.abs(percentage)}%
+        {displayPercentage}%
       </Text>
     </View>
   );
@@ -248,7 +261,30 @@ export default function Stats() {
   });
 
   const updateChartData = (records) => {
-    if (records.length === 0) return;
+    if (records.length === 0) {
+      // Set default values when no records exist
+      setAverages({
+        sleepQuality: 75, // Default average sleep quality
+        sleepDuration: '7h 30m', // Default average sleep duration
+        cycles: 5, // Default number of sleep cycles
+        temperature: 20, // Default temperature
+        humidity: 50, // Default humidity
+        noise: 30, // Default noise level
+        light: 10 // Default light level
+      });
+      
+      // Use default chart data
+      setChartData({
+        sleepQuality: defaultChartData.sleepQuality,
+        lightLevel: defaultChartData.lightLevel,
+        noiseLevel: defaultChartData.noiseLevel,
+        temperature: defaultChartData.temperature,
+        humidity: defaultChartData.humidity,
+        avgDuration: defaultChartData.avgDuration,
+        sleepCycles: defaultChartData.sleepCycles
+      });
+      return;
+    }
 
     // Sort records by date and get the latest 7 records
     const sortedRecords = [...records].sort((a, b) => 
@@ -326,53 +362,11 @@ export default function Stats() {
         isBelowOptimal: currentRecord.environmental.humidity < optimalValues.humidity
       },
       avgDuration: {
-        currentValue: currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
-          ? (() => {
-              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
-              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
-              
-              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-              
-              // Handle overnight case
-              if (duration < 0) {
-                duration += 24 * 60; // Add 24 hours worth of minutes
-              }
-              
-              return duration;
-            })()
-          : currentRecord.duration,
+        currentValue: currentRecord.duration,
         previousValue: weeklyAverages.duration,
         optimalValue: optimalValues.duration,
-        isAboveOptimal: (currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
-          ? (() => {
-              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
-              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
-              
-              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-              
-              // Handle overnight case
-              if (duration < 0) {
-                duration += 24 * 60; // Add 24 hours worth of minutes
-              }
-              
-              return duration;
-            })()
-          : currentRecord.duration) > optimalValues.duration,
-        isBelowOptimal: (currentRecord.actualSleep && currentRecord.actualSleep.start && currentRecord.actualSleep.end
-          ? (() => {
-              const [startHours, startMinutes] = currentRecord.actualSleep.start.split(':').map(Number);
-              const [endHours, endMinutes] = currentRecord.actualSleep.end.split(':').map(Number);
-              
-              let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-              
-              // Handle overnight case
-              if (duration < 0) {
-                duration += 24 * 60; // Add 24 hours worth of minutes
-              }
-              
-              return duration;
-            })()
-          : currentRecord.duration) < optimalValues.duration
+        isAboveOptimal: currentRecord.duration > optimalValues.duration,
+        isBelowOptimal: currentRecord.duration < optimalValues.duration
       },
       sleepCycles: {
         currentValue: currentRecord.cycles,
@@ -390,7 +384,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.quality)
+        data: latestRecords.map(r => r.quality || 0)
       }]
     };
 
@@ -415,9 +409,6 @@ export default function Stats() {
             if (duration < 0) {
               duration += 24 * 60; // Add 24 hours worth of minutes
             }
-          } else {
-            // Skip records without actual sleep data
-            return 0;
           }
           
           // Convert minutes to hours and minutes
@@ -436,7 +427,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.cycles)
+        data: latestRecords.map(r => r.cycles || 0)
       }]
     };
 
@@ -447,7 +438,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.light)
+        data: latestRecords.map(r => r.environmental.light || 0)
       }]
     };
 
@@ -457,7 +448,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.noise)
+        data: latestRecords.map(r => r.environmental.noise || 0)
       }]
     };
 
@@ -467,7 +458,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.temperature)
+        data: latestRecords.map(r => r.environmental.temperature || 0)
       }]
     };
 
@@ -477,7 +468,7 @@ export default function Stats() {
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.humidity)
+        data: latestRecords.map(r => r.environmental.humidity || 0)
       }]
     };
 
