@@ -130,8 +130,6 @@ export default function Journal() {
         if (storedCardData) {
           const cardData = JSON.parse(storedCardData);
 
-          console.log('cardData', cardData);
-
           setSleepQuality(cardData.quality);
           setSleepDuration(cardData.duration);
           setSleepCycles(cardData.cycles);

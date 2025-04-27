@@ -76,7 +76,6 @@ class SleepTrackingService {
     });
 
     this.environmentalSensorsEmitter.addListener('environmentalSensorStatus', (status) => {
-      console.log('Environmental sensor status:', status);
       this.eventEmitter.emit('sensorStatus', status);
     });
   }
