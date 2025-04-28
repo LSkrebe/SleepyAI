@@ -49,8 +49,6 @@ class SleepTrackingService {
     this.environmentalSensorsEmitter = new NativeEventEmitter(this.environmentalSensors);
     this.currentEnvironmentalData = {
       light: 0,
-      temperature: 0,
-      humidity: 0,
       noise: 0
     };
 
@@ -64,9 +62,11 @@ class SleepTrackingService {
 
     // Set up environmental sensors listeners
     this.environmentalSensorsEmitter.addListener('environmentalSensorUpdate', (data) => {
+      // Only update the values that are provided, keep existing values for others
       this.currentEnvironmentalData = {
         ...this.currentEnvironmentalData,
-        ...data
+        light: data.light !== undefined ? data.light : this.currentEnvironmentalData.light,
+        noise: data.noise !== undefined ? data.noise : this.currentEnvironmentalData.noise
       };
     });
 
@@ -216,9 +216,7 @@ class SleepTrackingService {
       state: this.phoneState,
       environmental: {
         noise: this.currentEnvironmentalData.noise,
-        light: this.currentEnvironmentalData.light,
-        temperature: this.currentEnvironmentalData.temperature,
-        humidity: this.currentEnvironmentalData.humidity
+        light: this.currentEnvironmentalData.light
       }
     };
 
@@ -305,16 +303,12 @@ class SleepTrackingService {
     try {
       // Calculate average environmental data
       const environmentalAverages = this.sleepData.reduce((acc, data) => {
-        acc.temperature += data.environmental.temperature;
-        acc.humidity += data.environmental.humidity;
         acc.noise += data.environmental.noise;
         acc.light += data.environmental.light;
         return acc;
-      }, { temperature: 0, humidity: 0, noise: 0, light: 0 });
+      }, { noise: 0, light: 0 });
 
       const dataCount = this.sleepData.length;
-      environmentalAverages.temperature = Math.round(environmentalAverages.temperature / dataCount);
-      environmentalAverages.humidity = Math.round(environmentalAverages.humidity / dataCount);
       environmentalAverages.noise = Math.round(environmentalAverages.noise / dataCount);
       environmentalAverages.light = Math.round(environmentalAverages.light / dataCount);
 
@@ -329,8 +323,6 @@ class SleepTrackingService {
 
       // Prepare environmental data for emission
       const environmentalData = this.sleepData.map(data => ({
-        temperature: data.environmental.temperature,
-        humidity: data.environmental.humidity,
         noise: data.environmental.noise,
         light: data.environmental.light
       }));
@@ -389,9 +381,9 @@ Expected format (exactly like this, no extra characters):
 {"scores":{"HH:MM:SS":85,"HH:MM:SS":45},"cycles":{"count":3},"recommendation":{"bedtime":"HH:MM","waketime":"HH:MM"},"actualSleep":{"start":"HH:MM:SS","end":"HH:MM:SS"}}`
           }, {
             role: "user",
-            content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light,temperature,humidity
+            content: `timestamp,acc_x,acc_y,acc_z,gyro_x,gyro_y,gyro_z,charging,phone_state,noise,light
 ${this.sleepData.map(point => 
-  `${point.time},${point.accelerometer.x},${point.accelerometer.y},${point.accelerometer.z},${point.gyroscope.x},${point.gyroscope.y},${point.gyroscope.z},${point.charging},${point.state},${point.environmental.noise},${point.environmental.light},${point.environmental.temperature},${point.environmental.humidity}`
+  `${point.time},${point.accelerometer.x},${point.accelerometer.y},${point.accelerometer.z},${point.gyroscope.x},${point.gyroscope.y},${point.gyroscope.z},${point.charging},${point.state},${point.environmental.noise},${point.environmental.light}`
 ).join('\n')}`
           }],
           temperature: 0.3,
@@ -411,38 +403,16 @@ ${this.sleepData.map(point =>
           .replace(/\s*```$/, '');
         
         analysis = JSON.parse(cleanedContent);
-
-      } catch (parseError) {
-        console.error('Failed to parse API response:', parseError);
+      } catch (error) {
+        console.error('Error cleaning up response content:', error);
         return null;
       }
-      
+
       // Validate the response structure
       if (!analysis.scores || typeof analysis.scores !== 'object') {
         console.error('Invalid response structure:', analysis);
         return null;
       }
-      
-      // Store the recommendation for the next occurrence of this day
-      // but don't update the current tracking session
-      if (analysis.recommendation) {
-        const { bedtime, waketime } = analysis.recommendation;
-        // Emit event with current times
-        this.eventEmitter.emit('sleepWindowUpdate', {
-          bedTime: this.bedTime,
-          wakeTime: this.wakeTime
-        });
-      }
-      
-      // Emit event with sleep quality scores
-      this.eventEmitter.emit('sleepQualityUpdate', {
-        scores: analysis.scores,
-        cycles: analysis.cycles,
-        environmental: environmentalData,
-        actualSleep: analysis.actualSleep || { start: this.sleepData[0].time, end: this.sleepData[this.sleepData.length - 1].time },
-        recommendation: analysis.recommendation,
-        startDate: new Date().toISOString().split('T')[0] // Add the date when sleep tracking started
-      });
 
       // Calculate actual sleep duration based on actualSleep times
       let actualSleepDuration = 0;
@@ -465,6 +435,8 @@ ${this.sleepData.map(point =>
         duration: actualSleepDuration, // Use actual sleep duration instead of tracking window
         quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
         cycles: analysis.cycles.count,
+        cycleDuration: Math.round(actualSleepDuration / analysis.cycles.count), // Calculate average cycle duration
+        qualityScores: analysis.scores, // Include all quality scores with timestamps
         environmental: {
           temperature: weatherData.temperature,
           humidity: weatherData.humidity,
@@ -480,13 +452,11 @@ ${this.sleepData.map(point =>
         const existingRecords = await AsyncStorage.getItem(storageKey);
         let records = existingRecords ? JSON.parse(existingRecords) : [];
         
-        // Keep only the last 7 days of records
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        records = records.filter(record => new Date(record.date) >= oneWeekAgo);
+        // Add new record to the beginning of the array
+        records.unshift(sleepRecord);
         
-        // Add new record
-        records.push(sleepRecord);
+        // Keep only the 7 most recent records
+        records = records.slice(0, 7);
         
         // Save updated records
         await AsyncStorage.setItem(storageKey, JSON.stringify(records));
@@ -504,39 +474,15 @@ ${this.sleepData.map(point =>
     }
   }
 
-  calculateSleepCycles(scores) {
-    if (!scores || Object.keys(scores).length === 0) return 0;
-    
-    // Convert scores to array of values
-    const scoreValues = Object.values(scores);
-    
-    // Count cycles based on significant changes in sleep quality
-    let cycleCount = 0;
-    let lastScore = null;
-    let isAscending = false;
-    
-    for (const score of scoreValues) {
-      if (lastScore !== null) {
-        // Detect cycle transitions based on significant changes
-        if (Math.abs(score - lastScore) > 30) {
-          if (score > lastScore && !isAscending) {
-            cycleCount++;
-            isAscending = true;
-          } else if (score < lastScore && isAscending) {
-            isAscending = false;
-          }
-        }
-      }
-      lastScore = score;
+  async getSleepRecords() {
+    try {
+      const storageKey = `sleepRecords_${this.deviceId}`;
+      const records = await AsyncStorage.getItem(storageKey);
+      return records ? JSON.parse(records) : [];
+    } catch (error) {
+      console.error('Error getting sleep records:', error);
+      return [];
     }
-    
-    return Math.max(1, cycleCount);
-  }
-
-  getCurrentDay() {
-    const today = new Date().getDay();
-    // Convert Sunday (0) to 6, Monday (1) to 0, etc.
-    return today === 0 ? 6 : today - 1;
   }
 
   onSleepQualityUpdate(callback) {
@@ -555,19 +501,6 @@ ${this.sleepData.map(point =>
     this.eventEmitter.off('sleepWindowUpdate', callback);
   }
 
-  // Update getSleepRecords to use device-specific storage
-  async getSleepRecords() {
-    try {
-      const storageKey = `sleepRecords_${this.deviceId}`;
-      const records = await AsyncStorage.getItem(storageKey);
-      return records ? JSON.parse(records) : [];
-    } catch (error) {
-      console.error('Error getting sleep records:', error);
-      return [];
-    }
-  }
-
-  // Add new event listener methods
   onSleepRecordsUpdate(callback) {
     this.eventEmitter.on('sleepRecordsUpdate', callback);
   }
@@ -576,17 +509,6 @@ ${this.sleepData.map(point =>
     this.eventEmitter.off('sleepRecordsUpdate', callback);
   }
 
-  // Add a new method to set sleep detection enabled/disabled
-  setSleepDetectionEnabled(enabled) {
-    this.sleepDetectionEnabled = enabled;
-    if (!enabled && this.isTracking) {
-      this.stopTracking();
-    }
-    // Emit event for sleep detection update
-    this.eventEmitter.emit('sleepDetectionUpdate', { enabled });
-  }
-
-  // Add methods to subscribe to sleep detection updates
   onSleepDetectionUpdate(callback) {
     this.eventEmitter.on('sleepDetectionUpdate', callback);
   }
@@ -595,7 +517,6 @@ ${this.sleepData.map(point =>
     this.eventEmitter.off('sleepDetectionUpdate', callback);
   }
 
-  // Add new event listener methods for sensor events
   onSensorError(callback) {
     this.eventEmitter.on('sensorError', callback);
   }
@@ -611,6 +532,15 @@ ${this.sleepData.map(point =>
   offSensorStatus(callback) {
     this.eventEmitter.off('sensorStatus', callback);
   }
+
+  setSleepDetectionEnabled(enabled) {
+    this.sleepDetectionEnabled = enabled;
+    if (!enabled && this.isTracking) {
+      this.stopTracking();
+    }
+    // Emit event for sleep detection update
+    this.eventEmitter.emit('sleepDetectionUpdate', { enabled });
+  }
 }
 
-export default new SleepTrackingService(); 
+export default new SleepTrackingService();

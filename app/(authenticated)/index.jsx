@@ -40,26 +40,6 @@ export default function Journal() {
   const slideUpAnim4 = useRef(new Animated.Value(100)).current;
   const slideUpAnim5 = useRef(new Animated.Value(100)).current;
 
-  // Save card data to AsyncStorage
-  const saveCardData = async () => {
-    try {
-      const cardData = {
-        quality: sleepQuality,
-        duration: sleepDuration,
-        cycles: sleepCycles,
-        cycleDuration: cycleDuration,
-        temperature: temperature,
-        humidity: humidity,
-        noise: noise,
-        light: light,
-        date: new Date().toISOString()
-      };
-      await AsyncStorage.setItem(`cardData_${deviceId}`, JSON.stringify(cardData));
-    } catch (error) {
-      console.error('Error saving card data:', error);
-    }
-  };
-
   // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return 'Today\'s Sleep';
@@ -104,43 +84,33 @@ export default function Journal() {
   useEffect(() => {
     const loadSavedData = async () => {
       try {
-        const [storedSleepData, storedChartData, storedCardData] = await Promise.all([
-          AsyncStorage.getItem(`sleepData_${deviceId}`),
-          AsyncStorage.getItem(`chartData_${deviceId}`),
-          AsyncStorage.getItem(`cardData_${deviceId}`)
-        ]);
+        const records = await sleepTrackingService.getSleepRecords();
         
-        if (storedSleepData) {
-          const parsedData = JSON.parse(storedSleepData);
-          setSleepData(parsedData);
+        if (records && records.length > 0) {
+          // Get the latest record (first in the array)
+          const latest = records[0];
           
-          // Find the latest sleep record
-          if (parsedData.length > 0) {
-            const latest = parsedData.reduce((latest, current) => {
-              return new Date(current.date) > new Date(latest.date) ? current : latest;
+          setLatestSleepDate(latest.date);
+          setSleepQuality(latest.quality);
+          setSleepDuration(`${Math.floor(latest.duration / 60)}:${(latest.duration % 60).toString().padStart(2, '0')}`);
+          setSleepCycles(latest.cycles);
+          setCycleDuration(latest.cycleDuration);
+          setTemperature(latest.environmental.temperature);
+          setHumidity(latest.environmental.humidity);
+          setNoise(latest.environmental.noise);
+          setLight(latest.environmental.light);
+
+          // Update chart data
+          if (latest.qualityScores) {
+            const labels = Object.keys(latest.qualityScores).map(time => {
+              const [hours] = time.split(':');
+              return hours;
             });
-            setLatestSleepDate(latest.date);
-          }
-        }
-        
-        if (storedChartData) {
-          setSleepQualityData(JSON.parse(storedChartData));
-        }
-
-        if (storedCardData) {
-          const cardData = JSON.parse(storedCardData);
-
-          setSleepQuality(cardData.quality);
-          setSleepDuration(cardData.duration);
-          setSleepCycles(cardData.cycles);
-          setCycleDuration(cardData.cycleDuration);
-          setTemperature(cardData.temperature);
-          setHumidity(cardData.humidity);
-          setNoise(cardData.noise);
-          setLight(cardData.light);
-          // Only update latestSleepDate if it's not already set from sleepData
-          if (!latestSleepDate) {
-            setLatestSleepDate(cardData.date);
+            const data = Object.values(latest.qualityScores);
+            setSleepQualityData({
+              labels,
+              datasets: [{ data }]
+            });
           }
         }
       } catch (error) {
@@ -148,59 +118,25 @@ export default function Journal() {
       }
     };
     loadSavedData();
-  }, [deviceId]);
 
-  // Save sleep data and chart data whenever they change
+    // Listen for sleep records updates
+    const handleSleepRecordsUpdate = (records) => {
+      loadSavedData(); // Reload data when records are updated
+    };
+
+    sleepTrackingService.onSleepRecordsUpdate(handleSleepRecordsUpdate);
+    return () => {
+      sleepTrackingService.offSleepRecordsUpdate(handleSleepRecordsUpdate);
+    };
+  }, []);
+
+  // Listen for sleep quality updates
   useEffect(() => {
-    if (deviceId) {
-      saveCardData();
-      AsyncStorage.setItem(`sleepData_${deviceId}`, JSON.stringify(sleepData));
-      AsyncStorage.setItem(`chartData_${deviceId}`, JSON.stringify(sleepQualityData));
-    }
-  }, [sleepData, sleepQualityData, deviceId]);
-
-  const handleSleepQualityUpdate = useCallback((data) => {
-    // Process environmental data
-    if (data.environmental && data.environmental.length > 0) {
-      // Calculate average environmental values
-      const avgEnvironmental = data.environmental.reduce((acc, curr) => ({
-        temperature: acc.temperature + curr.temperature,
-        humidity: acc.humidity + curr.humidity,
-        noise: acc.noise + curr.noise,
-        light: acc.light + curr.light
-      }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
-
-      const count = data.environmental.length;
-      setTemperature(Math.round(avgEnvironmental.temperature / count));
-      setHumidity(Math.round(avgEnvironmental.humidity / count));
-      setNoise(Math.round(avgEnvironmental.noise / count));
-      setLight(Math.round(avgEnvironmental.light / count));
-    }
-
-    // Update sleep quality scores
-    setSleepQuality(data.scores);
-    
-    // Update sleep duration
-    if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
-      const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
-      const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+    const handleSleepQualityUpdate = (data) => {
+      // Update sleep quality scores
+      setSleepQuality(data.quality);
       
-      let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-      
-      // Handle overnight case
-      if (actualSleepDuration < 0) {
-        actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
-      }
-      
-      const hours = Math.floor(actualSleepDuration / 60);
-      const minutes = actualSleepDuration % 60;
-      setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
-    }
-
-    // Update sleep cycles
-    if (data.cycles) {
-      setSleepCycles(data.cycles.count);
-      // Calculate average duration by dividing actual sleep duration by number of cycles
+      // Update sleep duration
       if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
         const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
         const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
@@ -212,13 +148,57 @@ export default function Journal() {
           actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
         }
         
-        setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
+        const hours = Math.floor(actualSleepDuration / 60);
+        const minutes = actualSleepDuration % 60;
+        setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
       }
-    }
 
-    // Save to AsyncStorage
-    saveCardData();
-  }, [saveCardData, temperature, humidity, noise, light]);
+      // Update sleep cycles
+      if (data.cycles) {
+        setSleepCycles(data.cycles.count);
+        // Calculate average duration by dividing actual sleep duration by number of cycles
+        if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
+          const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
+          const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
+          
+          let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+          
+          // Handle overnight case
+          if (actualSleepDuration < 0) {
+            actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
+          }
+          
+          setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
+        }
+      }
+
+      // Update environmental metrics
+      if (data.environmental) {
+        setTemperature(data.environmental.temperature);
+        setHumidity(data.environmental.humidity);
+        setNoise(data.environmental.noise);
+        setLight(data.environmental.light);
+      }
+
+      // Update chart data
+      if (data.scores) {
+        const labels = Object.keys(data.scores).map(time => {
+          const [hours] = time.split(':');
+          return hours;
+        });
+        const values = Object.values(data.scores);
+        setSleepQualityData({
+          labels,
+          datasets: [{ data: values }]
+        });
+      }
+    };
+
+    sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
+    return () => {
+      sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     // Start animations
@@ -263,142 +243,7 @@ export default function Journal() {
         useNativeDriver: true,
       }),
     ]).start();
-
-    // Listen for sleep quality updates
-    const handleSleepQualityUpdate = (data) => {
-      // Convert scores object to arrays for charting
-      const scoresArray = Object.entries(data.scores).map(([time, score]) => ({
-        time,
-        score: typeof score === 'object' ? score.score : score
-      }));
-
-      // Get the start time of the sleep session (first timestamp)
-      const startTime = scoresArray[0].time;
-      const [startHour, startMinute] = startTime.split(':').map(Number);
-      
-      // Determine the date based on the start time
-      const now = new Date();
-      const sleepDate = new Date(now);
-      
-      // Only adjust the date if the sleep session started after 6 PM and lasted into the next day
-      const endTime = scoresArray[scoresArray.length - 1].time;
-      const [endHour, endMinute] = endTime.split(':').map(Number);
-      
-      // For same-day sleep sessions, use today's date
-      if (startHour >= 18 && endHour < 6) { // If sleep started after 6 PM and ended before 6 AM
-        sleepDate.setDate(sleepDate.getDate() - 1);
-      }
-      
-      const sleepDateString = sleepDate.toISOString().split('T')[0];
-      setLatestSleepDate(sleepDateString);
-
-      // Format time labels to show only hours
-      const labels = scoresArray.map(item => {
-        const [hours] = item.time.split(':');
-        return hours;
-      });
-
-      // Calculate average sleep quality
-      const averageScore = scoresArray.reduce((sum, item) => sum + item.score, 0) / scoresArray.length;
-      setSleepQuality(Math.round(averageScore));
-
-      // Update sleep duration
-      if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
-        const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
-        const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
-        
-        let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-        
-        // Handle overnight case
-        if (actualSleepDuration < 0) {
-          actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
-        }
-        
-        const hours = Math.floor(actualSleepDuration / 60);
-        const minutes = actualSleepDuration % 60;
-        setSleepDuration(`${hours}:${minutes.toString().padStart(2, '0')}`);
-      }
-
-      // Update sleep cycles from API response
-      if (data.cycles) {
-        setSleepCycles(data.cycles.count);
-        // Calculate average duration by dividing actual sleep duration by number of cycles
-        if (data.actualSleep && data.actualSleep.start && data.actualSleep.end) {
-          const [startHours, startMinutes] = data.actualSleep.start.split(':').map(Number);
-          const [endHours, endMinutes] = data.actualSleep.end.split(':').map(Number);
-          
-          let actualSleepDuration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-          
-          // Handle overnight case
-          if (actualSleepDuration < 0) {
-            actualSleepDuration += 24 * 60; // Add 24 hours worth of minutes
-          }
-          
-          setCycleDuration(Math.round(actualSleepDuration / data.cycles.count));
-        }
-      }
-
-      // Update environmental metrics from the sleep data
-      if (data.environmental && data.environmental.length > 0) {
-        // Calculate average environmental values for the sleep session
-        const avgEnvironmental = data.environmental.reduce((acc, curr) => ({
-          temperature: acc.temperature + curr.temperature,
-          humidity: acc.humidity + curr.humidity,
-          noise: acc.noise + curr.noise,
-          light: acc.light + curr.light
-        }), { temperature: 0, humidity: 0, noise: 0, light: 0 });
-
-        const count = data.environmental.length;
-        const newTemperature = Math.round(avgEnvironmental.temperature / count);
-        const newHumidity = Math.round(avgEnvironmental.humidity / count);
-        const newNoise = Math.round(avgEnvironmental.noise / count);
-        const newLight = Math.round(avgEnvironmental.light / count);
-
-        setTemperature(newTemperature);
-        setHumidity(newHumidity);
-        setNoise(newNoise);
-        setLight(newLight);
-      }
-
-      // Update chart data
-      setSleepQualityData({
-        labels,
-        datasets: [{
-          data: scoresArray.map(item => item.score),
-        }],
-      });
-
-      // Save the updated data
-      const cardData = {
-        quality: Math.round(averageScore),
-        duration: data.actualSleep && data.actualSleep.start && data.actualSleep.end 
-          ? `${Math.floor((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
-              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) / 60)}:${((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
-              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) % 60).toString().padStart(2, '0')}`
-          : sleepDuration,
-        cycles: data.cycles ? data.cycles.count : sleepCycles,
-        cycleDuration: data.cycles ? (data.actualSleep && data.actualSleep.start && data.actualSleep.end 
-          ? Math.round((data.actualSleep.end.split(':').map(Number)[0] * 60 + data.actualSleep.end.split(':').map(Number)[1] - 
-              (data.actualSleep.start.split(':').map(Number)[0] * 60 + data.actualSleep.start.split(':').map(Number)[1])) / data.cycles.count)
-          : cycleDuration) : cycleDuration,
-        temperature: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.temperature, 0) / data.environmental.length) : temperature,
-        humidity: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.humidity, 0) / data.environmental.length) : humidity,
-        noise: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.noise, 0) / data.environmental.length) : noise,
-        light: data.environmental ? Math.round(data.environmental.reduce((sum, env) => sum + env.light, 0) / data.environmental.length) : light,
-        date: sleepDateString,
-        timestamp: now.getTime() // Add timestamp to ensure correct date comparison
-      };
-      AsyncStorage.setItem(`cardData_${deviceId}`, JSON.stringify(cardData));
-    };
-
-    // Set up the event listener
-    sleepTrackingService.onSleepQualityUpdate(handleSleepQualityUpdate);
-
-    // Clean up the event listener when component unmounts
-    return () => {
-      sleepTrackingService.offSleepQualityUpdate(handleSleepQualityUpdate);
-    };
-  }, [deviceId]);
+  }, []);
 
   const chartConfig = {
     backgroundColor: '#0F172A',

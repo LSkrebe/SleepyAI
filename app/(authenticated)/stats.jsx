@@ -286,20 +286,14 @@ export default function Stats() {
       return;
     }
 
-    // Sort records by date and get the latest 7 records
-    const sortedRecords = [...records].sort((a, b) => 
-      new Date(a.date) - new Date(b.date)
-    );
-    const latestRecords = sortedRecords.slice(-7);
-
     // Calculate current averages
-    const currentRecord = latestRecords[latestRecords.length - 1];
-    const weeklyRecords = latestRecords.slice(0, -1);
+    const currentRecord = records[0]; // Most recent record is first in the array
+    const previousRecords = records.slice(1); // All other records
     
-    // Calculate weekly averages
-    const weeklyAverages = {
-      quality: weeklyRecords.reduce((sum, r) => sum + r.quality, 0) / (weeklyRecords.length || 1),
-      duration: weeklyRecords.reduce((sum, r) => {
+    // Calculate averages from previous records
+    const previousAverages = {
+      quality: previousRecords.reduce((sum, r) => sum + r.quality, 0) / (previousRecords.length || 1),
+      duration: previousRecords.reduce((sum, r) => {
         // Use actualSleep data for duration calculation if available
         if (r.actualSleep && r.actualSleep.start && r.actualSleep.end) {
           const [startHours, startMinutes] = r.actualSleep.start.split(':').map(Number);
@@ -317,12 +311,12 @@ export default function Stats() {
           // Skip records without actual sleep data
           return sum;
         }
-      }, 0) / (weeklyRecords.length || 1),
-      cycles: weeklyRecords.reduce((sum, r) => sum + r.cycles, 0) / (weeklyRecords.length || 1),
-      temperature: weeklyRecords.reduce((sum, r) => sum + r.environmental.temperature, 0) / (weeklyRecords.length || 1),
-      humidity: weeklyRecords.reduce((sum, r) => sum + r.environmental.humidity, 0) / (weeklyRecords.length || 1),
-      noise: weeklyRecords.reduce((sum, r) => sum + r.environmental.noise, 0) / (weeklyRecords.length || 1),
-      light: weeklyRecords.reduce((sum, r) => sum + r.environmental.light, 0) / (weeklyRecords.length || 1)
+      }, 0) / (previousRecords.length || 1),
+      cycles: previousRecords.reduce((sum, r) => sum + r.cycles, 0) / (previousRecords.length || 1),
+      temperature: previousRecords.reduce((sum, r) => sum + r.environmental.temperature, 0) / (previousRecords.length || 1),
+      humidity: previousRecords.reduce((sum, r) => sum + r.environmental.humidity, 0) / (previousRecords.length || 1),
+      noise: previousRecords.reduce((sum, r) => sum + r.environmental.noise, 0) / (previousRecords.length || 1),
+      light: previousRecords.reduce((sum, r) => sum + r.environmental.light, 0) / (previousRecords.length || 1)
     };
 
     // Optimal values for metrics
@@ -333,69 +327,69 @@ export default function Stats() {
       duration: 480,   // Optimal sleep duration in minutes (8 hours)
     };
 
-    // Calculate trends by comparing current value with weekly average and optimal values
+    // Calculate trends by comparing current value with previous average and optimal values
     setTrends({
       sleepQuality: {
         currentValue: currentRecord.quality,
-        previousValue: weeklyAverages.quality
+        previousValue: previousAverages.quality
       },
       lightLevel: {
         currentValue: currentRecord.environmental.light,
-        previousValue: weeklyAverages.light
+        previousValue: previousAverages.light
       },
       noiseLevel: {
         currentValue: currentRecord.environmental.noise,
-        previousValue: weeklyAverages.noise
+        previousValue: previousAverages.noise
       },
       temperature: {
         currentValue: currentRecord.environmental.temperature,
-        previousValue: weeklyAverages.temperature,
+        previousValue: previousAverages.temperature,
         optimalValue: optimalValues.temperature,
         isAboveOptimal: currentRecord.environmental.temperature > optimalValues.temperature,
         isBelowOptimal: currentRecord.environmental.temperature < optimalValues.temperature
       },
       humidity: {
         currentValue: currentRecord.environmental.humidity,
-        previousValue: weeklyAverages.humidity,
+        previousValue: previousAverages.humidity,
         optimalValue: optimalValues.humidity,
         isAboveOptimal: currentRecord.environmental.humidity > optimalValues.humidity,
         isBelowOptimal: currentRecord.environmental.humidity < optimalValues.humidity
       },
       avgDuration: {
         currentValue: currentRecord.duration,
-        previousValue: weeklyAverages.duration,
+        previousValue: previousAverages.duration,
         optimalValue: optimalValues.duration,
         isAboveOptimal: currentRecord.duration > optimalValues.duration,
         isBelowOptimal: currentRecord.duration < optimalValues.duration
       },
       sleepCycles: {
         currentValue: currentRecord.cycles,
-        previousValue: weeklyAverages.cycles,
+        previousValue: previousAverages.cycles,
         optimalValue: optimalValues.cycles,
         isAboveOptimal: currentRecord.cycles > optimalValues.cycles,
         isBelowOptimal: currentRecord.cycles < optimalValues.cycles
       }
     });
 
-    // Create chart data with actual values from latest 7 records
+    // Create chart data with actual values from all records
     const newChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.quality || 0)
+        data: [...records].reverse().map(r => r.quality || 0)
       }]
     };
 
     // Create sleep duration chart data with hours and minutes
     const durationChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => {
+        data: [...records].reverse().map(r => {
           // Use actualSleep data for duration calculation if available
           let duration = 0;
           
@@ -422,53 +416,53 @@ export default function Stats() {
 
     // Create sleep cycles chart data
     const cyclesChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.cycles || 0)
+        data: [...records].reverse().map(r => r.cycles || 0)
       }]
     };
 
     // Create environmental charts data
     const lightChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.light || 0)
+        data: [...records].reverse().map(r => r.environmental.light || 0)
       }]
     };
 
     const noiseChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.noise || 0)
+        data: [...records].reverse().map(r => r.environmental.noise || 0)
       }]
     };
 
     const temperatureChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.temperature || 0)
+        data: [...records].reverse().map(r => r.environmental.temperature || 0)
       }]
     };
 
     const humidityChartData = {
-      labels: latestRecords.map(r => {
+      labels: [...records].reverse().map(r => {
         const date = new Date(r.date);
         return date.toLocaleDateString('en-US', { weekday: 'short' });
       }),
       datasets: [{
-        data: latestRecords.map(r => r.environmental.humidity || 0)
+        data: [...records].reverse().map(r => r.environmental.humidity || 0)
       }]
     };
 
@@ -498,9 +492,8 @@ export default function Stats() {
         // Calculate averages based on the last 7 days
         const totalQuality = latestRecords.reduce((sum, record) => sum + record.quality, 0);
         
-        // Use actualSleep data for duration calculation if available
+        // Calculate total duration using actual sleep data
         const totalDuration = latestRecords.reduce((sum, record) => {
-          // If actualSleep data is available, calculate duration from it
           if (record.actualSleep && record.actualSleep.start && record.actualSleep.end) {
             const [startHours, startMinutes] = record.actualSleep.start.split(':').map(Number);
             const [endHours, endMinutes] = record.actualSleep.end.split(':').map(Number);
@@ -513,10 +506,8 @@ export default function Stats() {
             }
             
             return sum + duration;
-          } else {
-            // Skip records without actual sleep data
-            return sum;
           }
+          return sum;
         }, 0);
         
         const totalCycles = latestRecords.reduce((sum, record) => sum + record.cycles, 0);
