@@ -49,7 +49,7 @@ const defaultChartData = {
   sleepCycles: {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [{
-      data: [4, 5, 4, 5, 5, 6, 5] // Number of sleep cycles
+      data: [3, 4, 4, 3, 5, 2, 4] // Number of sleep cycles
     }]
   },
   lightLevel: {
@@ -135,6 +135,7 @@ const chartConfigs = {
       ...baseChartConfig.propsForDots,
       stroke: '#EC4899',
     },
+    decimalPlaces: 1,
   },
   humidity: {
     ...baseChartConfig,

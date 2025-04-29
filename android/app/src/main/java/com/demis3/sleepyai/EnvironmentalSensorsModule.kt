@@ -172,17 +172,45 @@ class EnvironmentalSensorsModule(reactContext: ReactApplicationContext) : ReactC
     @ReactMethod
     fun getWeatherData(promise: Promise) {
         try {
-            if (!hasLocationPermission) {
+            // Check for either fine or coarse location permission
+            val hasFineLocation = ContextCompat.checkSelfPermission(
+                reactApplicationContext,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            val hasCoarseLocation = ContextCompat.checkSelfPermission(
+                reactApplicationContext,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasFineLocation && !hasCoarseLocation) {
                 promise.reject("WEATHER_ERROR", "Location permission not granted")
                 return
             }
 
             val locationManager = reactApplicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            
+            // Try to get location from GPS first, then network
+            var location: Location? = null
+            
+            if (hasFineLocation) {
+                try {
+                    location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                } catch (e: SecurityException) {
+                    // GPS provider failed, try network
+                }
+            }
+            
+            if (location == null && hasCoarseLocation) {
+                try {
+                    location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                } catch (e: SecurityException) {
+                    // Network provider failed
+                }
+            }
 
             if (location == null) {
-                promise.reject("WEATHER_ERROR", "Could not get location")
+                promise.reject("WEATHER_ERROR", "Could not get location. Please ensure location services are enabled.")
                 return
             }
 

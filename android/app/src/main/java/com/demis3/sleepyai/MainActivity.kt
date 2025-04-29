@@ -32,16 +32,16 @@ class MainActivity : ReactActivity() {
     // @generated end expo-splashscreen
     super.onCreate(null)
 
-    // Request permissions
+    // Request permissions sequentially
     requestAudioPermission()
-    requestLocationPermission()
   }
 
   private fun requestAudioPermission() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       when {
         ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED -> {
-          // Permission already granted
+          // Audio permission already granted, request location next
+          requestLocationPermission()
         }
         shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) -> {
           // Show explanation why we need the permission
@@ -67,8 +67,9 @@ class MainActivity : ReactActivity() {
   private fun requestLocationPermission() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       when {
-        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
-          // Permission already granted
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
+          // Location permission already granted (either fine or coarse)
         }
         shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
           // Show explanation why we need the permission
@@ -106,19 +107,23 @@ class MainActivity : ReactActivity() {
     when (requestCode) {
       PERMISSION_REQUEST_CODE -> {
         if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          // Permission granted
+          // Audio permission granted, request location next
           Toast.makeText(this, "Audio permission granted", Toast.LENGTH_SHORT).show()
+          requestLocationPermission()
         } else {
-          // Permission denied
+          // Audio permission denied, still try to request location
           Toast.makeText(this, "Audio permission denied - noise monitoring will not work", Toast.LENGTH_LONG).show()
+          requestLocationPermission()
         }
       }
       LOCATION_PERMISSION_REQUEST_CODE -> {
-        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-          // Permission granted
+        if (grantResults.isNotEmpty() && 
+            (grantResults[0] == PackageManager.PERMISSION_GRANTED || 
+             (grantResults.size > 1 && grantResults[1] == PackageManager.PERMISSION_GRANTED))) {
+          // Location permission granted (either fine or coarse)
           Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
         } else {
-          // Permission denied
+          // Location permission denied
           Toast.makeText(this, "Location permission denied - weather data may be inaccurate", Toast.LENGTH_LONG).show()
         }
       }
