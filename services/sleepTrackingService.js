@@ -465,6 +465,12 @@ ${this.sleepData.map(point =>
         
         // Emit event with updated records
         this.eventEmitter.emit('sleepRecordsUpdate', records);
+
+        // Emit sleep quality update with the date included
+        this.eventEmitter.emit('sleepQualityUpdate', {
+          ...analysis,
+          date: sleepRecord.date
+        });
       } catch (error) {
         console.error('Error saving sleep record:', error);
       }

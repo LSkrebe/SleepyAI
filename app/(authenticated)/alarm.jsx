@@ -165,10 +165,10 @@ export default function Alarm() {
       if (data.recommendation) {
         const { bedtime, waketime } = data.recommendation;
         
-        // Get the day when sleep tracking started
-        const startDate = new Date(data.startDate);
-        const startDay = startDate.getDay();
-        const adjustedDay = startDay === 0 ? 6 : startDay - 1;
+        // Get the day from the sleep record's date
+        const recordDate = new Date(data.date);
+        const recordDay = recordDate.getDay();
+        const adjustedDay = recordDay === 0 ? 6 : recordDay - 1;
         const targetDay = DAYS[adjustedDay];
         
         // Immediately apply the recommendations
