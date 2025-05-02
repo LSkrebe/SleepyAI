@@ -18,60 +18,15 @@ A modern React Native application for tracking and analyzing sleep patterns. Sle
 - Lucide React Native (for icons)
 - React Navigation
 
-## Getting Started
+## UI Preview
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/05dd6316-4d5a-47bd-8fbb-fe3a31b13892" alt="1000003645" width="30%">
+  <img src="https://github.com/user-attachments/assets/e5455c73-27c1-4668-a44c-64a548cdc92a" alt="Screenshot_20250501_193413_SleepyAI" width="30%">
+  <img src="https://github.com/user-attachments/assets/fbbc2d1f-de9a-446a-8b8b-37c049a48a2d" alt="1000003649" width="30%">
+</p>
 
-### Prerequisites
-
-- Node.js (v14 or later)
-- npm or yarn
-- React Native development environment setup
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/SleepyAI.git
-cd SleepyAI
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-```
-
-3. Start the development server:
-```bash
-npm start
-# or
-yarn start
-```
-
-4. Run on your device or simulator:
-```bash
-# For iOS
-npm run ios
-# For Android
-npm run android
-```
-
-## Project Structure
-
-```
-SleepyAI/
-├── app/
-│   ├── journal.jsx      # Main sleep tracking screen
-│   └── ...
-├── components/         # Reusable components
-├── assets/            # Images, fonts, etc.
-└── ...
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/93a13864-29c8-455a-8d0c-fccd662cb142" alt="1000003647" width="30%">
+  <img src="https://github.com/user-attachments/assets/e0d45475-3858-4251-befe-fb2479ddd41b" alt="1000003648" width="30%">
+  <img src="https://github.com/user-attachments/assets/bc5ce27e-af02-4089-a51e-b252f45d679b" alt="1000003650" width="30%">
+</p>
