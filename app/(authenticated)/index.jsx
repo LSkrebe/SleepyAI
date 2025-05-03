@@ -398,7 +398,7 @@ export default function Journal() {
         <View style={styles.cardHeader}>
           <View style={styles.environmentHeaderContent}>
             <Text style={[styles.cardTitle, styles.environmentTitle]}>Sleep Environment</Text>
-            <Text style={styles.environmentSubtitle}>Latest record</Text>
+            <Text style={styles.environmentSubtitle}>Your environment metrics</Text>
           </View>
           <View style={styles.environmentIconContainer}>
             <Activity size={24} color="#3B82F6" />

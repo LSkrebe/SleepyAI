@@ -401,8 +401,6 @@ ${this.sleepData.map(point =>
           .trim()
           .replace(/^```json\s*/, '')
           .replace(/\s*```$/, '');
-        
-        console.log(cleanedContent);
 
         analysis = JSON.parse(cleanedContent);
       } catch (error) {
