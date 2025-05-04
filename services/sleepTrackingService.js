@@ -47,6 +47,7 @@ class SleepTrackingService {
     this.deviceId = null;
     this.environmentalSensors = NativeModules.EnvironmentalSensors;
     this.environmentalSensorsEmitter = new NativeEventEmitter(this.environmentalSensors);
+    this.sleepTrackingModule = NativeModules.SleepTrackingModule;
     this.currentEnvironmentalData = {
       light: 0,
       noise: 0
@@ -236,6 +237,15 @@ class SleepTrackingService {
     // Reset sleep data when starting new tracking session
     this.sleepData = [];
 
+    // Start foreground service
+    this.sleepTrackingModule.startSleepTracking()
+      .then(() => {
+        console.log('Foreground service started');
+      })
+      .catch(error => {
+        console.error('Error starting foreground service:', error);
+      });
+
     // Start environmental sensors
     this.environmentalSensors.startListening();
 
@@ -260,6 +270,15 @@ class SleepTrackingService {
 
   stopTracking() {
     if (!this.isTracking) return;
+
+    // Stop foreground service
+    this.sleepTrackingModule.stopSleepTracking()
+      .then(() => {
+        console.log('Foreground service stopped');
+      })
+      .catch(error => {
+        console.error('Error stopping foreground service:', error);
+      });
 
     // Stop environmental sensors
     this.environmentalSensors.stopListening();

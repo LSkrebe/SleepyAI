@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
+import android.content.Intent
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -20,6 +21,7 @@ class MainActivity : ReactActivity() {
   companion object {
     private const val PERMISSION_REQUEST_CODE = 123
     private const val LOCATION_PERMISSION_REQUEST_CODE = 124
+    private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 125
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,6 +72,7 @@ class MainActivity : ReactActivity() {
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED -> {
           // Location permission already granted (either fine or coarse)
+          requestNotificationPermission()
         }
         shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) -> {
           // Show explanation why we need the permission
@@ -92,6 +95,33 @@ class MainActivity : ReactActivity() {
               Manifest.permission.ACCESS_COARSE_LOCATION
             ),
             LOCATION_PERMISSION_REQUEST_CODE
+          )
+        }
+      }
+    }
+  }
+
+  private fun requestNotificationPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      when {
+        ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED -> {
+          // Notification permission already granted
+        }
+        shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+          // Show explanation why we need the permission
+          Toast.makeText(this, "Notification permission is needed for sleep tracking", Toast.LENGTH_LONG).show()
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            NOTIFICATION_PERMISSION_REQUEST_CODE
+          )
+        }
+        else -> {
+          // Request the permission
+          ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            NOTIFICATION_PERMISSION_REQUEST_CODE
           )
         }
       }
@@ -122,11 +152,44 @@ class MainActivity : ReactActivity() {
              (grantResults.size > 1 && grantResults[1] == PackageManager.PERMISSION_GRANTED))) {
           // Location permission granted (either fine or coarse)
           Toast.makeText(this, "Location permission granted", Toast.LENGTH_SHORT).show()
+          requestNotificationPermission()
         } else {
           // Location permission denied
           Toast.makeText(this, "Location permission denied - weather data may be inaccurate", Toast.LENGTH_LONG).show()
+          requestNotificationPermission()
         }
       }
+      NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+          // Notification permission granted
+          Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+        } else {
+          // Notification permission denied
+          Toast.makeText(this, "Notification permission denied - sleep tracking may not work properly", Toast.LENGTH_LONG).show()
+        }
+      }
+    }
+  }
+
+  fun startSleepTrackingService() {
+    val serviceIntent = Intent(this, SleepTrackingService::class.java)
+    try {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        startForegroundService(serviceIntent)
+      } else {
+        startService(serviceIntent)
+      }
+    } catch (e: Exception) {
+      Toast.makeText(this, "Failed to start sleep tracking service: ${e.message}", Toast.LENGTH_LONG).show()
+    }
+  }
+
+  fun stopSleepTrackingService() {
+    val serviceIntent = Intent(this, SleepTrackingService::class.java)
+    try {
+      stopService(serviceIntent)
+    } catch (e: Exception) {
+      Toast.makeText(this, "Failed to stop sleep tracking service: ${e.message}", Toast.LENGTH_LONG).show()
     }
   }
 
