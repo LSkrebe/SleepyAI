@@ -48,6 +48,7 @@ class SleepTrackingService {
     this.environmentalSensors = NativeModules.EnvironmentalSensors;
     this.environmentalSensorsEmitter = new NativeEventEmitter(this.environmentalSensors);
     this.sleepTrackingModule = NativeModules.SleepTrackingModule;
+    this.sleepTrackingEmitter = new NativeEventEmitter(this.sleepTrackingModule);
     this.currentEnvironmentalData = {
       light: 0,
       noise: 0
@@ -78,6 +79,12 @@ class SleepTrackingService {
 
     this.environmentalSensorsEmitter.addListener('environmentalSensorStatus', (status) => {
       this.eventEmitter.emit('sensorStatus', status);
+    });
+
+    // Listen for sleep data updates from native service
+    this.sleepTrackingEmitter.addListener('sleepDataUpdate', (data) => {
+      this.sleepData.push(data);
+      this.eventEmitter.emit('sleepDataUpdate', data);
     });
   }
 
@@ -223,9 +230,6 @@ class SleepTrackingService {
 
     // Add data point to sleep data array
     this.sleepData.push(dataPoint);
-    
-    // Log the current data point
-    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${this.currentEnvironmentalData.noise} L=${this.currentEnvironmentalData.light}`);
   }
 
   startTracking() {
@@ -237,13 +241,13 @@ class SleepTrackingService {
     // Reset sleep data when starting new tracking session
     this.sleepData = [];
 
-    // Start foreground service
+    // Start native foreground service
     this.sleepTrackingModule.startSleepTracking()
       .then(() => {
-        console.log('Foreground service started');
+        this.isTracking = true;
       })
       .catch(error => {
-        console.error('Error starting foreground service:', error);
+        console.error('Error starting sleep tracking:', error);
       });
 
     // Start environmental sensors
@@ -263,21 +267,24 @@ class SleepTrackingService {
     this.gyroscopeSubscription = Gyroscope.addListener(gyroscopeData => {
       this.lastGyroData = gyroscopeData;
     });
-
-    this.isTracking = true;
-    console.log('Sleep tracking started');
   }
 
   stopTracking() {
     if (!this.isTracking) return;
 
-    // Stop foreground service
+    // Stop native foreground service
     this.sleepTrackingModule.stopSleepTracking()
       .then(() => {
-        console.log('Foreground service stopped');
+        this.isTracking = false;
+
+        // Analyze collected data if we have any
+        if (this.sleepData.length > 0) {
+          this.analyzeSleepData();
+          this.sleepData = []; // Reset data after analysis
+        }
       })
       .catch(error => {
-        console.error('Error stopping foreground service:', error);
+        console.error('Error stopping sleep tracking:', error);
       });
 
     // Stop environmental sensors
@@ -294,14 +301,6 @@ class SleepTrackingService {
     }
 
     this.lastGyroData = null;
-    this.isTracking = false;
-    console.log('Sleep tracking stopped');
-
-    // Analyze collected data if we have any
-    if (this.sleepData.length > 0) {
-      this.analyzeSleepData();
-      this.sleepData = []; // Reset data after analysis
-    }
   }
 
   setPhoneCharging(isCharging) {

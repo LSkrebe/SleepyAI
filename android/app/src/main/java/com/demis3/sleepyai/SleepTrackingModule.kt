@@ -4,51 +4,49 @@ import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.Promise
-import android.app.Activity
+import com.facebook.react.modules.core.DeviceEventManagerModule
+import android.content.Intent
+import android.os.Build
 import android.util.Log
 
 class SleepTrackingModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
-    companion object {
-        private const val TAG = "SleepTrackingModule"
-    }
-
     override fun getName() = "SleepTrackingModule"
 
     @ReactMethod
     fun startSleepTracking(promise: Promise) {
         try {
-            val activity = currentActivity
-            if (activity != null && activity is MainActivity) {
-                activity.startSleepTrackingService()
-                Log.d(TAG, "Sleep tracking service started")
-                promise.resolve(null)
+            val intent = Intent(reactApplicationContext, SleepTrackingService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                reactApplicationContext.startForegroundService(intent)
             } else {
-                val error = "Activity not found or not MainActivity"
-                Log.e(TAG, error)
-                promise.reject("ERROR", error)
+                reactApplicationContext.startService(intent)
             }
+            promise.resolve(null)
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting sleep tracking", e)
-            promise.reject("ERROR", e.message ?: "Unknown error")
+            Log.e("SleepTrackingModule", "Error starting sleep tracking", e)
+            promise.reject("ERROR", e.message)
         }
     }
 
     @ReactMethod
     fun stopSleepTracking(promise: Promise) {
         try {
-            val activity = currentActivity
-            if (activity != null && activity is MainActivity) {
-                activity.stopSleepTrackingService()
-                Log.d(TAG, "Sleep tracking service stopped")
-                promise.resolve(null)
-            } else {
-                val error = "Activity not found or not MainActivity"
-                Log.e(TAG, error)
-                promise.reject("ERROR", error)
-            }
+            val intent = Intent(reactApplicationContext, SleepTrackingService::class.java)
+            reactApplicationContext.stopService(intent)
+            promise.resolve(null)
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping sleep tracking", e)
-            promise.reject("ERROR", e.message ?: "Unknown error")
+            Log.e("SleepTrackingModule", "Error stopping sleep tracking", e)
+            promise.reject("ERROR", e.message)
         }
+    }
+
+    @ReactMethod
+    fun addListener(eventName: String) {
+        // Required for RN built in Event Emitter
+    }
+
+    @ReactMethod
+    fun removeListeners(count: Int) {
+        // Required for RN built in Event Emitter
     }
 } 
