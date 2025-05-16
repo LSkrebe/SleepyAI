@@ -59,12 +59,8 @@ class SleepTrackingService {
       this.loadSettings();
     });
 
-    // Start periodic check for sleep window
-    this.startWindowCheck();
-
     // Set up environmental sensors listeners
     this.environmentalSensorsEmitter.addListener('environmentalSensorUpdate', (data) => {
-      // Only update the values that are provided, keep existing values for others
       this.currentEnvironmentalData = {
         ...this.currentEnvironmentalData,
         light: data.light !== undefined ? data.light : this.currentEnvironmentalData.light,
@@ -81,20 +77,21 @@ class SleepTrackingService {
       this.eventEmitter.emit('sensorStatus', status);
     });
 
-    // Listen for sleep data updates from native service
-    this.sleepTrackingEmitter.addListener('sleepDataUpdate', (data) => {
-      this.sleepData.push(data);
-      this.eventEmitter.emit('sleepDataUpdate', data);
+    // Listen for sleep tracking events from native service
+    this.sleepTrackingEmitter.addListener('sleepTrackingStarted', () => {
+      this.startTracking();
+    });
+
+    this.sleepTrackingEmitter.addListener('sleepTrackingStopped', () => {
+      this.stopTracking();
     });
   }
 
   async initializeDeviceId() {
     try {
-      // Try to get existing device ID from storage
       let storedDeviceId = await AsyncStorage.getItem('deviceId');
       
       if (!storedDeviceId) {
-        // Generate a new device ID if none exists
         storedDeviceId = `${Device.modelName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         await AsyncStorage.setItem('deviceId', storedDeviceId);
       }
@@ -111,7 +108,6 @@ class SleepTrackingService {
       const savedSettings = await AsyncStorage.getItem(storageKey);
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
-        // Get current day
         const today = new Date().getDay();
         const adjustedDay = today === 0 ? 6 : today - 1;
         const currentDay = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'][adjustedDay];
@@ -119,7 +115,11 @@ class SleepTrackingService {
         if (settings.days && settings.days[currentDay]) {
           this.bedTime = settings.days[currentDay].bedtime;
           this.wakeTime = settings.days[currentDay].wakeup;
-          // Emit event to notify components of loaded settings
+          
+          // Schedule sleep tracking with native module
+          this.sleepTrackingModule.scheduleSleepTracking(this.bedTime, this.wakeTime)
+            .catch(error => console.error('Error scheduling sleep tracking:', error));
+          
           this.eventEmitter.emit('sleepWindowUpdate', { bedTime: this.bedTime, wakeTime: this.wakeTime });
         }
       }
@@ -128,77 +128,86 @@ class SleepTrackingService {
     }
   }
 
-  startWindowCheck() {
-    // Check every minute if we should start/stop tracking
-    this.windowCheckInterval = setInterval(() => {
-      if (this.currentDayEnabled && this.sleepDetectionEnabled) {
-        const isWithin = this.isWithinSleepWindow();
-        if (isWithin && !this.isTracking) {
-          this.startTracking();
-        } else if (!isWithin && this.isTracking) {
-          this.stopTracking();
-        }
-      } else if (this.isTracking) {
-        // If sleep detection is disabled or current day is disabled, stop tracking
-        this.stopTracking();
-      }
-    }, 60000); // Check every minute
-  }
-
-  stopWindowCheck() {
-    if (this.windowCheckInterval) {
-      clearInterval(this.windowCheckInterval);
-      this.windowCheckInterval = null;
-    }
-  }
-
   setSleepWindow(bedTime, wakeTime) {
     this.bedTime = bedTime;
     this.wakeTime = wakeTime;
-    // Reset sleep data when window changes
     this.sleepData = [];
-    // Emit event for sleep window update
+    
+    // Schedule sleep tracking with native module
+    this.sleepTrackingModule.scheduleSleepTracking(bedTime, wakeTime)
+      .catch(error => console.error('Error scheduling sleep tracking:', error));
+    
     this.eventEmitter.emit('sleepWindowUpdate', { bedTime, wakeTime });
   }
 
-  setCurrentDayEnabled(enabled) {
-    this.currentDayEnabled = enabled;
-    if (!enabled) {
-      this.stopTracking();
-      this.sleepData = []; // Reset sleep data when day is disabled
-    }
+  startTracking() {
+    if (this.isTracking) return;
+    if (!this.currentDayEnabled) return;
+    if (!this.sleepDetectionEnabled) return;
+
+    // Reset sleep data when starting new tracking session
+    this.sleepData = [];
+
+    // Start native foreground service
+    this.sleepTrackingModule.startSleepTracking()
+      .then(() => {
+        this.isTracking = true;
+        console.log('Sleep tracking started');
+      })
+      .catch(error => {
+        console.error('Error starting sleep tracking:', error);
+      });
+
+    // Start environmental sensors
+    this.environmentalSensors.startListening();
+
+    Accelerometer.setUpdateInterval(10000);
+    Gyroscope.setUpdateInterval(10000);
+
+    this.accelerometerSubscription = Accelerometer.addListener(accelerometerData => {
+      if (this.lastGyroData) {
+        this.logSleepData(accelerometerData, this.lastGyroData);
+      }
+    });
+
+    this.gyroscopeSubscription = Gyroscope.addListener(gyroscopeData => {
+      this.lastGyroData = gyroscopeData;
+    });
   }
 
-  isWithinSleepWindow() {
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    const [bedHours, bedMinutes] = this.bedTime.split(':').map(Number);
-    const [wakeHours, wakeMinutes] = this.wakeTime.split(':').map(Number);
-    
-    const bedTimeInMinutes = bedHours * 60 + bedMinutes;
-    const wakeTimeInMinutes = wakeHours * 60 + wakeMinutes;
+  stopTracking() {
+    if (!this.isTracking) return;
 
-    // If bedtime is after wake time (e.g., 22:00 to 07:00)
-    if (bedTimeInMinutes > wakeTimeInMinutes) {
-      // Check if current time is exactly wake time
-      if (currentTime === wakeTimeInMinutes) {
-        // If we're at wake time, stop tracking
-        this.stopTracking();
-        return false;
-      }
-      // Otherwise, check if we're within the overnight window
-      return currentTime >= bedTimeInMinutes || currentTime < wakeTimeInMinutes;
-    } else {
-      // For same-day windows (e.g., 22:00 to 23:00)
-      // Check if current time is exactly wake time
-      if (currentTime === wakeTimeInMinutes) {
-        // If we're at wake time, stop tracking
-        this.stopTracking();
-        return false;
-      }
-      // Otherwise, check if we're within the window
-      return currentTime >= bedTimeInMinutes && currentTime < wakeTimeInMinutes;
+    // Stop native foreground service
+    this.sleepTrackingModule.stopSleepTracking()
+      .then(() => {
+        this.isTracking = false;
+        console.log('Sleep tracking stopped');
+
+        // Analyze collected data if we have any
+        if (this.sleepData.length > 0) {
+          this.analyzeSleepData();
+          this.sleepData = []; // Reset data after analysis
+        }
+      })
+      .catch(error => {
+        console.error('Error stopping sleep tracking:', error);
+      });
+
+    // Stop environmental sensors
+    this.environmentalSensors.stopListening();
+
+    if (this.accelerometerSubscription) {
+      this.accelerometerSubscription.remove();
+      this.accelerometerSubscription = null;
     }
+
+    if (this.gyroscopeSubscription) {
+      this.gyroscopeSubscription.remove();
+      this.gyroscopeSubscription = null;
+    }
+
+    this.lastGyroData = null;
   }
 
   formatSensorData(data, isGyroscope = false) {
@@ -230,85 +239,9 @@ class SleepTrackingService {
 
     // Add data point to sleep data array
     this.sleepData.push(dataPoint);
-  }
-
-  startTracking() {
-    if (this.isTracking) return;
-    if (!this.currentDayEnabled) return;
-    if (!this.sleepDetectionEnabled) return;
-    if (!this.isWithinSleepWindow()) return;
-
-    // Reset sleep data when starting new tracking session
-    this.sleepData = [];
-
-    // Start native foreground service
-    this.sleepTrackingModule.startSleepTracking()
-      .then(() => {
-        this.isTracking = true;
-      })
-      .catch(error => {
-        console.error('Error starting sleep tracking:', error);
-      });
-
-    // Start environmental sensors
-    this.environmentalSensors.startListening();
-
-    Accelerometer.setUpdateInterval(10000);
-    Gyroscope.setUpdateInterval(10000);
-
-    this.accelerometerSubscription = Accelerometer.addListener(accelerometerData => {
-      if (this.isWithinSleepWindow() && this.lastGyroData) {
-        this.logSleepData(accelerometerData, this.lastGyroData);
-      } else if (!this.isWithinSleepWindow()) {
-        this.stopTracking();
-      }
-    });
-
-    this.gyroscopeSubscription = Gyroscope.addListener(gyroscopeData => {
-      this.lastGyroData = gyroscopeData;
-    });
-  }
-
-  stopTracking() {
-    if (!this.isTracking) return;
-
-    // Stop native foreground service
-    this.sleepTrackingModule.stopSleepTracking()
-      .then(() => {
-        this.isTracking = false;
-
-        // Analyze collected data if we have any
-        if (this.sleepData.length > 0) {
-          this.analyzeSleepData();
-          this.sleepData = []; // Reset data after analysis
-        }
-      })
-      .catch(error => {
-        console.error('Error stopping sleep tracking:', error);
-      });
-
-    // Stop environmental sensors
-    this.environmentalSensors.stopListening();
-
-    if (this.accelerometerSubscription) {
-      this.accelerometerSubscription.remove();
-      this.accelerometerSubscription = null;
-    }
-
-    if (this.gyroscopeSubscription) {
-      this.gyroscopeSubscription.remove();
-      this.gyroscopeSubscription = null;
-    }
-
-    this.lastGyroData = null;
-  }
-
-  setPhoneCharging(isCharging) {
-    this.isPhoneCharging = isCharging;
-  }
-
-  setPhoneInUse(isInUse) {
-    this.phoneState = isInUse ? 'active' : 'idle';
+    
+    // Log the current data point
+    console.log(`T=${time} A=${accel.x.toFixed(2)},${accel.y.toFixed(2)},${accel.z.toFixed(2)} G=${gyro.x.toFixed(2)},${gyro.y.toFixed(2)},${gyro.z.toFixed(2)} C=${this.isPhoneCharging ? '1' : '0'} S=${this.phoneState} N=${this.currentEnvironmentalData.noise} L=${this.currentEnvironmentalData.light}`);
   }
 
   async analyzeSleepData() {

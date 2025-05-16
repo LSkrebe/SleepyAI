@@ -9,7 +9,7 @@ export default {
     scheme: 'sleepyai',
     newArchEnabled: true,
     splash: {
-      image: './assets/images/splash-icon.png',
+      image: './assets/images/icon.png',
       resizeMode: 'contain',
       backgroundColor: '#ffffff'
     },

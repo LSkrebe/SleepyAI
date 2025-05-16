@@ -54,13 +54,21 @@ class SleepTrackingService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
-        
-        if (!isTracking) {
-            startTracking()
+        when (intent?.action) {
+            "START_TRACKING" -> {
+                startForeground(NOTIFICATION_ID, createNotification())
+                sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STARTED"))
+            }
+            "STOP_TRACKING" -> {
+                stopForeground(true)
+                stopSelf()
+                sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STOPPED"))
+            }
+            else -> {
+                startForeground(NOTIFICATION_ID, createNotification())
+                sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STARTED"))
+            }
         }
-        
         return START_STICKY
     }
 
