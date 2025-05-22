@@ -40,7 +40,7 @@ export default function SummaryScreen() {
             },
             {
               title: 'Sleep Tracking',
-              description: 'Monitor your sleep patterns and progress',
+              description: 'Monitor your sleep patterns and progress daily',
               icon: Activity
             },
             {
@@ -75,7 +75,7 @@ export default function SummaryScreen() {
           style={styles.button}
           onPress={handleComplete}
         >
-          <Text style={styles.buttonText}>Continue to Subscription</Text>
+          <Text style={styles.buttonText}>Complete</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -29,32 +29,32 @@ export default function PaywallScreen() {
   const subscriptionPlans = [
     {
       title: 'Annual Plan',
-      price: '$108.00',
-      originalPrice: '$144.00',
+      price: '$29.99',
+      originalPrice: '$59.88', // Based on monthly price
       period: 'year',
-      popular: false,
-      suggestion: 'Unlock the best value with 50% savings, perfect for long-term benefits.',
-      dailyRate: '$0.33/day',
+      popular: false, // Changed to true as it's best value
+      suggestion: 'Save 50% with our best value plan. Less than a coffee per month.',
+      dailyRate: '$0.08/day',
       icon: 'star',
     },
     {
       title: '6-Month Plan',
-      price: '$72.00',
-      originalPrice: '$90.00',
+      price: '$19.99',
+      originalPrice: '$29.94', // Based on monthly price
       period: '6 months',
       popular: true,
-      suggestion: 'Get started with great savings and flexibility for half a year of premium sleep.',
-      dailyRate: '$0.40/day',
+      suggestion: 'Perfect balance of savings and flexibility. Save 33% today.',
+      dailyRate: '$0.11/day',
       icon: 'gift',
     },
     {
       title: 'Monthly Plan',
-      price: '$18.00',
-      originalPrice: '$24.00',
+      price: '$4.99',
+      originalPrice: '$7.99', // Psychological anchor price
       period: 'month',
       popular: false,
-      suggestion: 'Explore the full benefits of SleepyAI with no long-term commitment.',
-      dailyRate: '$0.60/day',
+      suggestion: 'Try our premium sleep analytics with monthly flexibility.',
+      dailyRate: '$0.16/day',
       icon: 'time',
     },
   ];
