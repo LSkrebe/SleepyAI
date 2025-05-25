@@ -85,6 +85,59 @@ class SleepTrackingService {
     this.sleepTrackingEmitter.addListener('sleepTrackingStopped', () => {
       this.stopTracking();
     });
+
+    // Listen for sleep data saved event
+    this.sleepTrackingEmitter.addListener('sleepDataSaved', async (data) => {
+      try {
+        // Get the current date
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Analyze the saved data
+        const analysis = await this.analyzeSleepDataFromNative(data.data);
+        
+        if (analysis) {
+          // Create a sleep record
+          const sleepRecord = {
+            date: today,
+            duration: analysis.totalDuration,
+            quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
+            cycles: analysis.cycles.count,
+            cycleDuration: Math.round(analysis.totalDuration / analysis.cycles.count),
+            qualityScores: analysis.scores,
+            environmental: {
+              temperature: 20, // Default values since we don't have weather data
+              humidity: 50,
+              noise: 30,
+              light: 10
+            },
+            actualSleep: analysis.actualSleep
+          };
+
+          // Save to AsyncStorage
+          const storageKey = `sleepRecords_${this.deviceId}`;
+          const existingRecords = await AsyncStorage.getItem(storageKey);
+          let records = existingRecords ? JSON.parse(existingRecords) : [];
+          
+          // Add new record to the beginning of the array
+          records.unshift(sleepRecord);
+          
+          // Keep only the 7 most recent records
+          records = records.slice(0, 7);
+          
+          // Save updated records
+          await AsyncStorage.setItem(storageKey, JSON.stringify(records));
+          
+          // Emit events
+          this.eventEmitter.emit('sleepRecordsUpdate', records);
+          this.eventEmitter.emit('sleepQualityUpdate', {
+            ...analysis,
+            date: today
+          });
+        }
+      } catch (error) {
+        console.error('Error processing saved sleep data:', error);
+      }
+    });
   }
 
   async initializeDeviceId() {
@@ -497,6 +550,160 @@ ${this.sleepData.map(point =>
     }
     // Emit event for sleep detection update
     this.eventEmitter.emit('sleepDetectionUpdate', { enabled });
+  }
+
+  async analyzeSleepDataFromNative(data) {
+    try {
+      // Parse the data
+      const sleepData = data.split('\n').map(line => {
+        const parts = line.split(',');
+        return {
+          time: parts[0],
+          accelerometer: {
+            x: parseFloat(parts[1]),
+            y: parseFloat(parts[2]),
+            z: parseFloat(parts[3])
+          },
+          gyroscope: {
+            x: parseFloat(parts[4]),
+            y: parseFloat(parts[5]),
+            z: parseFloat(parts[6])
+          },
+          charging: parseInt(parts[7]),
+          state: parts[8],
+          environmental: {
+            noise: parseInt(parts[9]),
+            light: parseInt(parts[10])
+          }
+        };
+      });
+
+      // Calculate sleep quality scores
+      const scores = {};
+      for (const data of sleepData) {
+        const movementScore = this.calculateMovementScore(data.accelerometer, data.gyroscope);
+        const environmentalScore = this.calculateEnvironmentalScore(data.environmental);
+        const stateScore = this.calculateStateScore(data.charging, data.state);
+        
+        const finalScore = Math.round(movementScore * 0.5 + environmentalScore * 0.3 + stateScore * 0.2);
+        scores[data.time] = finalScore;
+      }
+
+      // Calculate sleep cycles
+      const cycles = this.calculateSleepCycles(scores);
+
+      // Determine actual sleep times
+      const actualSleep = this.determineActualSleepTimes(sleepData, scores);
+
+      // Calculate total duration
+      const totalDuration = this.calculateTotalDuration(actualSleep.start, actualSleep.end);
+
+      return {
+        scores,
+        cycles,
+        actualSleep,
+        totalDuration
+      };
+    } catch (error) {
+      console.error('Error analyzing sleep data from native:', error);
+      return null;
+    }
+  }
+
+  calculateMovementScore(accel, gyro) {
+    const accelMovement = Math.sqrt(
+      accel.x * accel.x +
+      accel.y * accel.y +
+      accel.z * accel.z
+    );
+    
+    const gyroMovement = Math.sqrt(
+      gyro.x * gyro.x +
+      gyro.y * gyro.y +
+      gyro.z * gyro.z
+    );
+    
+    const totalMovement = accelMovement + gyroMovement;
+    return Math.max(0, 100 - Math.round(totalMovement * 10));
+  }
+
+  calculateEnvironmentalScore(environmental) {
+    const noiseScore = Math.max(0, 100 - environmental.noise);
+    const lightScore = Math.max(0, 100 - environmental.light);
+    return Math.round((noiseScore + lightScore) / 2);
+  }
+
+  calculateStateScore(charging, state) {
+    let score = 0;
+    
+    // Charging state (50 points)
+    score += charging ? 50 : 0;
+    
+    // Phone state (50 points)
+    score += {
+      'idle': 50,
+      'locked': 40,
+      'screen_off': 30
+    }[state] || 0;
+    
+    return score;
+  }
+
+  calculateSleepCycles(scores) {
+    let cycles = 0;
+    let inHighQuality = false;
+    
+    for (const score of Object.values(scores)) {
+      if (score >= 70 && !inHighQuality) {
+        inHighQuality = true;
+      } else if (score < 70 && inHighQuality) {
+        inHighQuality = false;
+        cycles++;
+      }
+    }
+    
+    if (inHighQuality) {
+      cycles++;
+    }
+    
+    return { count: Math.max(1, cycles) };
+  }
+
+  determineActualSleepTimes(sleepData, scores) {
+    let sleepStart = sleepData[0].time;
+    let sleepEnd = sleepData[sleepData.length - 1].time;
+    
+    // Find first high quality sleep period
+    for (const [time, score] of Object.entries(scores)) {
+      if (score >= 70) {
+        sleepStart = time;
+        break;
+      }
+    }
+    
+    // Find last high quality sleep period
+    for (const [time, score] of Object.entries(scores).reverse()) {
+      if (score >= 70) {
+        sleepEnd = time;
+        break;
+      }
+    }
+    
+    return { start: sleepStart, end: sleepEnd };
+  }
+
+  calculateTotalDuration(startTime, endTime) {
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    
+    let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
+    
+    // Handle overnight case
+    if (duration < 0) {
+      duration += 24 * 60; // Add 24 hours worth of minutes
+    }
+    
+    return duration;
   }
 }
 

@@ -23,7 +23,9 @@ import com.facebook.react.modules.core.DeviceEventManagerModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,6 +47,8 @@ class SleepTrackingService : Service(), SensorEventListener {
     private var sleepData = mutableListOf<Map<String, Any>>()
     private var serviceJob: Job? = null
     private var isTracking = false
+    private var trackingInterval: Job? = null
+    private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
 
     override fun onCreate() {
         super.onCreate()
@@ -150,7 +154,7 @@ class SleepTrackingService : Service(), SensorEventListener {
     private fun startTracking() {
         if (isTracking) return
 
-        serviceJob = CoroutineScope(Dispatchers.IO).launch {
+        serviceJob = serviceScope.launch {
             try {
                 // Register sensor listeners
                 accelerometer?.let {
@@ -169,6 +173,22 @@ class SleepTrackingService : Service(), SensorEventListener {
                     )
                 }
 
+                // Start periodic tracking
+                trackingInterval = serviceScope.launch {
+                    while (isTracking) {
+                        delay(60000) // Track every minute
+                        if (lastGyroData != null) {
+                            // Get current sensor data
+                            val accelData = FloatArray(3)
+                            val gyroData = FloatArray(3)
+                            System.arraycopy(lastGyroData!!, 0, gyroData, 0, 3)
+                            
+                            // Log sleep data
+                            logSleepData(accelData, gyroData)
+                        }
+                    }
+                }
+
                 isTracking = true
                 Log.d(TAG, "Sleep tracking started in foreground service")
             } catch (e: Exception) {
@@ -181,12 +201,60 @@ class SleepTrackingService : Service(), SensorEventListener {
         isTracking = false
         serviceJob?.cancel()
         serviceJob = null
+        trackingInterval?.cancel()
+        trackingInterval = null
+        serviceScope.cancel() // Now using the imported cancel() extension function
 
         // Unregister sensor listeners
         sensorManager?.unregisterListener(this)
 
+        // Save sleep data before stopping
+        if (sleepData.isNotEmpty()) {
+            saveSleepData()
+        }
+
         lastGyroData = null
         Log.d(TAG, "Sleep tracking stopped in foreground service")
+    }
+
+    private fun saveSleepData() {
+        try {
+            val prefs = getSharedPreferences("SleepTrackingPrefs", Context.MODE_PRIVATE)
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val key = "sleep_data_$date"
+            
+            // Convert sleep data to a format that can be easily parsed
+            val jsonData = sleepData.joinToString("\n") { data ->
+                val accel = data["accelerometer"] as Map<String, Float>
+                val gyro = data["gyroscope"] as Map<String, Float>
+                val env = data["environmental"] as Map<String, Int>
+                "${data["time"]}," +
+                "${accel["x"]},${accel["y"]},${accel["z"]}," +
+                "${gyro["x"]},${gyro["y"]},${gyro["z"]}," +
+                "${data["charging"]}," +
+                "${data["state"]}," +
+                "${env["noise"]},${env["light"]}"
+            }
+            
+            // Save to SharedPreferences
+            prefs.edit().apply {
+                putString(key, jsonData)
+                apply()
+            }
+            
+            // Emit event to React Native
+            emitEvent("sleepDataSaved", mapOf(
+                "date" to date,
+                "data" to jsonData
+            ))
+            
+            // Clear the data after saving
+            sleepData.clear()
+            
+            Log.d(TAG, "Saved sleep data for $date: ${jsonData.length} bytes")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving sleep data", e)
+        }
     }
 
     override fun onSensorChanged(event: SensorEvent) {
