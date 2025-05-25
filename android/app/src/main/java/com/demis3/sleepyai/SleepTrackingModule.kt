@@ -58,21 +58,23 @@ class SleepTrackingModule(reactContext: ReactApplicationContext) : ReactContextB
             }
 
             // Create intents for bed and wake times
-            val bedIntent = Intent(reactApplicationContext, SleepTrackingService::class.java).apply {
+            val bedIntent = Intent(reactApplicationContext, SleepTrackingAlarmReceiver::class.java).apply {
                 action = "START_TRACKING"
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
-            val wakeIntent = Intent(reactApplicationContext, SleepTrackingService::class.java).apply {
+            val wakeIntent = Intent(reactApplicationContext, SleepTrackingAlarmReceiver::class.java).apply {
                 action = "STOP_TRACKING"
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
 
-            val bedPendingIntent = PendingIntent.getService(
+            val bedPendingIntent = PendingIntent.getBroadcast(
                 reactApplicationContext,
                 0,
                 bedIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            val wakePendingIntent = PendingIntent.getService(
+            val wakePendingIntent = PendingIntent.getBroadcast(
                 reactApplicationContext,
                 1,
                 wakeIntent,

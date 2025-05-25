@@ -57,5 +57,14 @@
         <category android:name="android.intent.category.DEFAULT" />
       </intent-filter>
     </receiver>
+    <receiver
+      android:name=".SleepTrackingAlarmReceiver"
+      android:enabled="true"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="START_TRACKING" />
+        <action android:name="STOP_TRACKING" />
+      </intent-filter>
+    </receiver>
   </application>
 </manifest>

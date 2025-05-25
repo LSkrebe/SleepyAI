@@ -54,18 +54,22 @@ class SleepTrackingService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Start as foreground service immediately
+        startForeground(NOTIFICATION_ID, createNotification())
+        
         when (intent?.action) {
             "START_TRACKING" -> {
-                startForeground(NOTIFICATION_ID, createNotification())
+                startTracking()
                 sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STARTED"))
             }
             "STOP_TRACKING" -> {
+                stopTracking()
                 stopForeground(true)
                 stopSelf()
                 sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STOPPED"))
             }
             else -> {
-                startForeground(NOTIFICATION_ID, createNotification())
+                startTracking()
                 sendBroadcast(Intent("com.demis3.sleepyai.SLEEP_TRACKING_STARTED"))
             }
         }
@@ -133,8 +137,8 @@ class SleepTrackingService : Service(), SensorEventListener {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Sleep Tracking Active")
-            .setContentText("Sleep tracking is running in the background")
+            .setContentTitle("Tracking active")
+            .setContentText("Tracking sleep in the background")
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
