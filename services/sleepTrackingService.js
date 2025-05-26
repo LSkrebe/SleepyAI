@@ -54,9 +54,9 @@ class SleepTrackingService {
       noise: 0
     };
 
-    // Initialize device ID and load settings
-    this.initializeDeviceId().then(() => {
-      this.loadSettings();
+    // Initialize everything in the correct order
+    this.initialize().catch(error => {
+      console.error('Error during initialization:', error);
     });
 
     // Set up environmental sensors listeners
@@ -79,65 +79,53 @@ class SleepTrackingService {
 
     // Listen for sleep tracking events from native service
     this.sleepTrackingEmitter.addListener('sleepTrackingStarted', () => {
+      console.log('Received sleepTrackingStarted event');
       this.startTracking();
     });
 
     this.sleepTrackingEmitter.addListener('sleepTrackingStopped', () => {
+      console.log('Received sleepTrackingStopped event');
       this.stopTracking();
     });
 
     // Listen for sleep data saved event
     this.sleepTrackingEmitter.addListener('sleepDataSaved', async (data) => {
-      try {
-        // Get the current date
-        const today = new Date().toISOString().split('T')[0];
-        
-        // Analyze the saved data
-        const analysis = await this.analyzeSleepDataFromNative(data.data);
-        
-        if (analysis) {
-          // Create a sleep record
-          const sleepRecord = {
-            date: today,
-            duration: analysis.totalDuration,
-            quality: Math.round(Object.values(analysis.scores).reduce((a, b) => a + b, 0) / Object.keys(analysis.scores).length),
-            cycles: analysis.cycles.count,
-            cycleDuration: Math.round(analysis.totalDuration / analysis.cycles.count),
-            qualityScores: analysis.scores,
-            environmental: {
-              temperature: 20, // Default values since we don't have weather data
-              humidity: 50,
-              noise: 30,
-              light: 10
-            },
-            actualSleep: analysis.actualSleep
-          };
-
-          // Save to AsyncStorage
-          const storageKey = `sleepRecords_${this.deviceId}`;
-          const existingRecords = await AsyncStorage.getItem(storageKey);
-          let records = existingRecords ? JSON.parse(existingRecords) : [];
-          
-          // Add new record to the beginning of the array
-          records.unshift(sleepRecord);
-          
-          // Keep only the 7 most recent records
-          records = records.slice(0, 7);
-          
-          // Save updated records
-          await AsyncStorage.setItem(storageKey, JSON.stringify(records));
-          
-          // Emit events
-          this.eventEmitter.emit('sleepRecordsUpdate', records);
-          this.eventEmitter.emit('sleepQualityUpdate', {
-            ...analysis,
-            date: today
-          });
-        }
-      } catch (error) {
-        console.error('Error processing saved sleep data:', error);
-      }
+      console.log('Received sleepDataSaved event:', data);
+      await this.processSleepData(data);
     });
+
+    // Listen for broadcast intents
+    const { DeviceEventEmitter } = require('react-native');
+    
+    // Listen for sleep data saved broadcast
+    DeviceEventEmitter.addListener('com.demis3.sleepyai.SLEEP_DATA_SAVED', async (data) => {
+      console.log('Received SLEEP_DATA_SAVED broadcast:', data);
+      await this.processSleepData(data);
+    });
+
+    // Listen for sleep tracking stopped broadcast
+    DeviceEventEmitter.addListener('com.demis3.sleepyai.SLEEP_TRACKING_STOPPED', () => {
+      console.log('Received SLEEP_TRACKING_STOPPED broadcast');
+      this.stopTracking();
+    });
+  }
+
+  async initialize() {
+    try {
+      // First initialize device ID
+      await this.initializeDeviceId();
+      console.log('Device ID initialized:', this.deviceId);
+      
+      // Then load settings
+      await this.loadSettings();
+      console.log('Settings loaded');
+      
+      // Finally load sleep records
+      await this.loadSleepRecords();
+      console.log('Sleep records loaded');
+    } catch (error) {
+      console.error('Error in initialization sequence:', error);
+    }
   }
 
   async initializeDeviceId() {
@@ -552,158 +540,154 @@ ${this.sleepData.map(point =>
     this.eventEmitter.emit('sleepDetectionUpdate', { enabled });
   }
 
-  async analyzeSleepDataFromNative(data) {
+  async loadSleepRecords() {
     try {
-      // Parse the data
-      const sleepData = data.split('\n').map(line => {
-        const parts = line.split(',');
-        return {
-          time: parts[0],
-          accelerometer: {
-            x: parseFloat(parts[1]),
-            y: parseFloat(parts[2]),
-            z: parseFloat(parts[3])
-          },
-          gyroscope: {
-            x: parseFloat(parts[4]),
-            y: parseFloat(parts[5]),
-            z: parseFloat(parts[6])
-          },
-          charging: parseInt(parts[7]),
-          state: parts[8],
+      console.log('Loading sleep records...');
+      const storageKey = `sleepRecords_${this.deviceId}`;
+      console.log('Using storage key:', storageKey);
+      
+      const records = await AsyncStorage.getItem(storageKey);
+      console.log('Raw records from storage:', records);
+      
+      if (records) {
+        const parsedRecords = JSON.parse(records);
+        console.log('Parsed records:', parsedRecords);
+        this.eventEmitter.emit('sleepRecordsUpdate', parsedRecords);
+      } else {
+        console.log('No records found in storage');
+        // Initialize with empty array if no records exist
+        await AsyncStorage.setItem(storageKey, JSON.stringify([]));
+        this.eventEmitter.emit('sleepRecordsUpdate', []);
+      }
+    } catch (error) {
+      console.error('Error loading sleep records:', error);
+      // Initialize with empty array on error
+      const storageKey = `sleepRecords_${this.deviceId}`;
+      await AsyncStorage.setItem(storageKey, JSON.stringify([]));
+      this.eventEmitter.emit('sleepRecordsUpdate', []);
+    }
+  }
+
+  async processSleepData(data) {
+    try {
+      console.log('Processing sleep data...');
+      
+      // Get the current date
+      const today = data.date || new Date().toISOString().split('T')[0];
+      console.log('Processing data for date:', today);
+      
+      if (!data.data || typeof data.data !== 'string') {
+        console.error('Invalid data format received:', data);
+        return;
+      }
+      
+      // Parse the data string into an array of data points
+      const dataPoints = data.data.split('\n')
+        .filter(line => line.trim()) // Remove empty lines
+        .map(line => {
+          try {
+            const [timestamp, accX, accY, accZ, gyroX, gyroY, gyroZ, charging, state, noise, light] = line.split(',');
+            return {
+              time: timestamp,
+              accelerometer: { 
+                x: parseFloat(accX) || 0, 
+                y: parseFloat(accY) || 0, 
+                z: parseFloat(accZ) || 0 
+              },
+              gyroscope: { 
+                x: parseFloat(gyroX) || 0, 
+                y: parseFloat(gyroY) || 0, 
+                z: parseFloat(gyroZ) || 0 
+              },
+              charging: charging === '1',
+              state: state || 'idle',
+              environmental: {
+                noise: parseInt(noise) || 0,
+                light: parseInt(light) || 0
+              }
+            };
+          } catch (error) {
+            console.error('Error parsing data point:', line, error);
+            return null;
+          }
+        })
+        .filter(point => point !== null); // Remove any failed parses
+      
+      if (dataPoints.length === 0) {
+        console.error('No valid data points to process');
+        return;
+      }
+      
+      console.log('Parsed data points:', dataPoints);
+      
+      // Analyze the data
+      const analysis = await this.analyzeSleepData(dataPoints);
+      console.log('Analysis result:', analysis);
+      
+      if (analysis) {
+        // Create a sleep record
+        const sleepRecord = {
+          date: today,
+          duration: analysis.totalDuration || 0,
+          quality: Math.round(Object.values(analysis.scores || {}).reduce((a, b) => a + b, 0) / Math.max(Object.keys(analysis.scores || {}).length, 1)),
+          cycles: analysis.cycles?.count || 1,
+          cycleDuration: Math.round((analysis.totalDuration || 0) / (analysis.cycles?.count || 1)),
+          qualityScores: analysis.scores || {},
           environmental: {
-            noise: parseInt(parts[9]),
-            light: parseInt(parts[10])
+            temperature: 20, // Default values since we don't have weather data
+            humidity: 50,
+            noise: Math.round(dataPoints.reduce((sum, point) => sum + point.environmental.noise, 0) / dataPoints.length),
+            light: Math.round(dataPoints.reduce((sum, point) => sum + point.environmental.light, 0) / dataPoints.length)
+          },
+          actualSleep: analysis.actualSleep || { 
+            start: dataPoints[0].time, 
+            end: dataPoints[dataPoints.length - 1].time 
           }
         };
-      });
-
-      // Calculate sleep quality scores
-      const scores = {};
-      for (const data of sleepData) {
-        const movementScore = this.calculateMovementScore(data.accelerometer, data.gyroscope);
-        const environmentalScore = this.calculateEnvironmentalScore(data.environmental);
-        const stateScore = this.calculateStateScore(data.charging, data.state);
         
-        const finalScore = Math.round(movementScore * 0.5 + environmentalScore * 0.3 + stateScore * 0.2);
-        scores[data.time] = finalScore;
+        console.log('Created sleep record:', sleepRecord);
+
+        // Save to AsyncStorage
+        const storageKey = `sleepRecords_${this.deviceId}`;
+        console.log('Storage key:', storageKey);
+        
+        const existingRecords = await AsyncStorage.getItem(storageKey);
+        console.log('Existing records:', existingRecords);
+        
+        let records = existingRecords ? JSON.parse(existingRecords) : [];
+        
+        // Add new record to the beginning of the array
+        records.unshift(sleepRecord);
+        
+        // Keep only the 7 most recent records
+        records = records.slice(0, 7);
+        
+        console.log('Saving updated records:', records);
+        
+        // Save updated records
+        await AsyncStorage.setItem(storageKey, JSON.stringify(records));
+        
+        // Verify the save
+        const savedRecords = await AsyncStorage.getItem(storageKey);
+        console.log('Verified saved records:', savedRecords);
+        
+        // Emit events
+        console.log('Emitting sleepRecordsUpdate event');
+        this.eventEmitter.emit('sleepRecordsUpdate', records);
+        
+        console.log('Emitting sleepQualityUpdate event');
+        this.eventEmitter.emit('sleepQualityUpdate', {
+          ...analysis,
+          date: today
+        });
+        
+        console.log('Successfully processed and saved sleep data');
+      } else {
+        console.error('Analysis returned null');
       }
-
-      // Calculate sleep cycles
-      const cycles = this.calculateSleepCycles(scores);
-
-      // Determine actual sleep times
-      const actualSleep = this.determineActualSleepTimes(sleepData, scores);
-
-      // Calculate total duration
-      const totalDuration = this.calculateTotalDuration(actualSleep.start, actualSleep.end);
-
-      return {
-        scores,
-        cycles,
-        actualSleep,
-        totalDuration
-      };
     } catch (error) {
-      console.error('Error analyzing sleep data from native:', error);
-      return null;
+      console.error('Error processing sleep data:', error);
     }
-  }
-
-  calculateMovementScore(accel, gyro) {
-    const accelMovement = Math.sqrt(
-      accel.x * accel.x +
-      accel.y * accel.y +
-      accel.z * accel.z
-    );
-    
-    const gyroMovement = Math.sqrt(
-      gyro.x * gyro.x +
-      gyro.y * gyro.y +
-      gyro.z * gyro.z
-    );
-    
-    const totalMovement = accelMovement + gyroMovement;
-    return Math.max(0, 100 - Math.round(totalMovement * 10));
-  }
-
-  calculateEnvironmentalScore(environmental) {
-    const noiseScore = Math.max(0, 100 - environmental.noise);
-    const lightScore = Math.max(0, 100 - environmental.light);
-    return Math.round((noiseScore + lightScore) / 2);
-  }
-
-  calculateStateScore(charging, state) {
-    let score = 0;
-    
-    // Charging state (50 points)
-    score += charging ? 50 : 0;
-    
-    // Phone state (50 points)
-    score += {
-      'idle': 50,
-      'locked': 40,
-      'screen_off': 30
-    }[state] || 0;
-    
-    return score;
-  }
-
-  calculateSleepCycles(scores) {
-    let cycles = 0;
-    let inHighQuality = false;
-    
-    for (const score of Object.values(scores)) {
-      if (score >= 70 && !inHighQuality) {
-        inHighQuality = true;
-      } else if (score < 70 && inHighQuality) {
-        inHighQuality = false;
-        cycles++;
-      }
-    }
-    
-    if (inHighQuality) {
-      cycles++;
-    }
-    
-    return { count: Math.max(1, cycles) };
-  }
-
-  determineActualSleepTimes(sleepData, scores) {
-    let sleepStart = sleepData[0].time;
-    let sleepEnd = sleepData[sleepData.length - 1].time;
-    
-    // Find first high quality sleep period
-    for (const [time, score] of Object.entries(scores)) {
-      if (score >= 70) {
-        sleepStart = time;
-        break;
-      }
-    }
-    
-    // Find last high quality sleep period
-    for (const [time, score] of Object.entries(scores).reverse()) {
-      if (score >= 70) {
-        sleepEnd = time;
-        break;
-      }
-    }
-    
-    return { start: sleepStart, end: sleepEnd };
-  }
-
-  calculateTotalDuration(startTime, endTime) {
-    const [startHours, startMinutes] = startTime.split(':').map(Number);
-    const [endHours, endMinutes] = endTime.split(':').map(Number);
-    
-    let duration = (endHours * 60 + endMinutes) - (startHours * 60 + startMinutes);
-    
-    // Handle overnight case
-    if (duration < 0) {
-      duration += 24 * 60; // Add 24 hours worth of minutes
-    }
-    
-    return duration;
   }
 }
 
